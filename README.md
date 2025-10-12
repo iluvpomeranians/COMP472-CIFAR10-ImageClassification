@@ -1,4 +1,4 @@
-# 🧠 COMP472 Fall 2025 – CIFAR-10 Classification (Naive Bayes to CNN)
+# COMP472 Fall 2025 – CIFAR-10 Classification (Naive Bayes to CNN)
 
 ### Concordia University — Artificial Intelligence Project
 
@@ -7,7 +7,7 @@ We begin with **Naive Bayes (Step 3)** and will later expand to **Decision Trees
 
 ---
 
-## 🚀 Setup & Installation
+## Setup & Installation
 
 ### Prerequisites
 - **Python 3.11+**
@@ -23,7 +23,7 @@ We begin with **Naive Bayes (Step 3)** and will later expand to **Decision Trees
 
 2. Verify setup by running the data loader:
    ```bash
-   python run_data_loader.py
+   python main.py
    ```
 
    This will automatically download the CIFAR-10 dataset into the `./data/` directory.
