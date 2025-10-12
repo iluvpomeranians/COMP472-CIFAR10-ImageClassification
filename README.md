@@ -10,13 +10,14 @@ We begin with **Naive Bayes (Step 3)** and will later expand to **Decision Trees
 ## Setup & Installation
 
 ### Prerequisites
-- **Python 3.11+**
-- **pip** (latest version)
+- **Python 3.11.2**
+- **pip** 
 
 ### Installation Steps
 
 1. Upgrade pip and install dependencies:
    ```bash
+   pip3 install torch torchvision
    python -m pip install --upgrade pip
    python -m venv .venv
    Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
