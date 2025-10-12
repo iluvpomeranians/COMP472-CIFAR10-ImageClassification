@@ -11,7 +11,7 @@ from torchvision import models
 import numpy as np
 from .data_loader import load_cifar10
 import os
-os.makedirs("./data/features", exist_ok=True)
+
 
 # ------------------------------------------------------------
 # Helper: extract 512-D features from each image batch
@@ -67,6 +67,7 @@ def main():
     X_test, y_test   = extract_features(feature_extractor, test_loader, device)
 
     # 5. Save to disk
+    os.makedirs("./data/features", exist_ok=True)
     np.savez("./data/features/features_cifar10_resnet18.npz",
              X_train=X_train, y_train=y_train,
              X_test=X_test,  y_test=y_test)

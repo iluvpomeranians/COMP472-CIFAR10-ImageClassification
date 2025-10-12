@@ -18,6 +18,9 @@ We begin with **Naive Bayes (Step 3)** and will later expand to **Decision Trees
 1. Upgrade pip and install dependencies:
    ```bash
    python -m pip install --upgrade pip
+   python -m venv .venv
+   Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+   .venv\Scripts\activate
    pip install -r requirements.txt
    ```
 

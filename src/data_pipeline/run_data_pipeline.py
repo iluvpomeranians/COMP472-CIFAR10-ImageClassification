@@ -70,7 +70,7 @@ def main():
     print("\nData pipeline completed successfully!")
     print("Output saved to ./data/features/")
     print("   - features_cifar10_resnet18.npz")
-    print("   - features_cifar10_resnet18_PCA50.npz")
+    print("   - features_cifar10_resnet18_pca50.npz")
 
 
 if __name__ == "__main__":
