@@ -38,19 +38,36 @@ We begin with **Naive Bayes (Step 3)** and will later expand to **Decision Trees
 ## 📁 Repository Structure
 
 ```
-comp472_project/
+COMP472_PROJECT/
 │
-├── data_loader.py          # Loads & subsets CIFAR-10 (500 train + 100 test per class)
-├── feature_extract.py      # ResNet-18 feature extraction + PCA reduction
-├── naive_bayes.py          # Manual + Scikit-Learn Gaussian Naive Bayes models
-├── utils.py                # Helper functions (accuracy, confusion matrix, plotting)
+├── data/                                 # Dataset storage (CIFAR-10 + generated features)
 │
-├── run_data_loader.py      # Runs & inspects the data loader independently
-├── main.py                 # Main pipeline (load → extract → train → evaluate)
+├── src/
+│   ├── data_pipeline/                    # Data preparation & preprocessing
+│   │   ├── data_loader.py                # Loads & subsets CIFAR-10 (500 train + 100 test per class)
+│   │   ├── feature_extractor.py          # Extracts 512-D ResNet-18 features
+│   │   ├── pca_reduction.py              # Reduces feature vectors to 50-D using PCA
+│   │   ├── run_data_pipeline.py          # Orchestrates the full preprocessing pipeline
+│   │   └── __init__.py
+│   │
+│   ├── models/                           # Machine learning models
+│   │   ├── naive_bayes.py                # Gaussian Naive Bayes (Step 3)
+│   │   ├── decision_tree.py              # Decision Tree (Step 4)
+│   │   ├── mlp.py                        # Multi-Layer Perceptron (Step 5)
+│   │   ├── cnn_vgg11.py                  # CNN (Step 6)
+│   │   └── __init__.py
+│   │
+│   ├── utils/                            # Shared utilities and metrics
+│   │   ├── metrics.py                    # Accuracy, confusion matrix, plotting tools
+│   │   └── __init__.py
+│   │
+│   └── __init__.py
 │
-├── requirements.txt        # Dependencies for all modules
-├── .gitignore              # Files and folders excluded from version control
-└── README.md               # This documentation
+├── main.py                               # Project entry point (runs full pipeline)
+├── requirements.txt                      # Python dependencies
+├── README.md                             # Project documentation
+└── .gitignore                            # Ignored folders (data/, __pycache__/, etc.)
+
 ```
 
 ### 🧩 Future Files to Be Added

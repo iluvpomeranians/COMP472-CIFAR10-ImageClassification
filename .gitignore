@@ -13,7 +13,8 @@ venv/
 env/
 
 # Data files
-data/
+data/*
+!data/.gitkeep
 *.npy
 *.pkl
 *.npz

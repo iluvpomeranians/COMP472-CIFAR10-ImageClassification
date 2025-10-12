@@ -1,7 +1,7 @@
 import torch
 from torchvision import datasets, transforms
 
-def load_cifar10(root="./data"):
+def load_cifar10(root="./data/raw"):
     transform = transforms.Compose([
         transforms.Resize((224, 224)),                    # Resize to 224x224 for models like ResNet
         transforms.ToTensor(),                            # This converts NumPy array to PyTorch Tensor [0, 1]
@@ -13,7 +13,7 @@ def load_cifar10(root="./data"):
 
     # keep first 500 train + 100 test per class
     def subset_by_class(dataset, n_per_class):
-        targets = torch.tensor(dataset.targets)
+        targets = torch.tensor(dataset.targets)                                 # targets is a list of labels
         indices = []
         for cls in range(10):                                                   #cls means class index (e.g. 0 = airplane, 1 = automobile, etc.)
             cls_idx = (targets == cls).nonzero(as_tuple=True)[0][:n_per_class]  # So tagets is a 1-D tensor and we try to match the label cls by returning
