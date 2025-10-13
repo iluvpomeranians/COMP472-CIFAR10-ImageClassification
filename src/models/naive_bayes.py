@@ -45,12 +45,12 @@ def train_gaussian_bayes(X_train, y_train):
 
 #TODO: need to fix and simplify predict function
 def predict_gaussian_bayes(X_test, y_test, means, variances, priors):
+    print(f"X_test: {X_test.shape}  y_test: {y_test.shape}")
     num_imgs = X_test.shape[0]
     num_features = X_test.shape[1]
-    total_log_probability = {}
     num_classes = 10
-    print(f"X_test: {X_test.shape}  y_test: {y_test.shape}")
     current_log_probability = np.zeros((num_imgs, num_classes))
+    y_predicitons = np.zeros(num_imgs)
 
     for c in range(num_classes):
         mean_c = means[c]
@@ -73,13 +73,17 @@ def predict_gaussian_bayes(X_test, y_test, means, variances, priors):
             current_log_probability[img_index][c] = prior_c + sum_log_gaussian_density
             # print(f"Total probability for class {c}: { np.exp(current_log_probability[img_index][c])}")
             if c == (num_classes - 1):
-                highest_prob_class = np.argmax(current_log_probability[img_index])
-                print(f"Predicted class for image {img_index}: {highest_prob_class} with probability {np.exp(current_log_probability[img_index][highest_prob_class])}")
+                y_prediction = np.argmax(current_log_probability[img_index])
+                current_probability = np.exp(current_log_probability[img_index][y_prediction])
+                print(f"Predicted class for image {img_index}: {y_prediction} with probability {current_probability}")
+                y_predicitons[img_index] = y_prediction
 
-        total_log_probability[c] = current_log_probability
-    return
+    return y_predicitons
 
 if __name__ == "__main__":
     X_train, y_train, X_test, y_test = load_50npz()
     mean_c, variance_c, priors = train_gaussian_bayes(X_train, y_train)
-    predict_gaussian_bayes(X_test, y_test, mean_c, variance_c, priors)
+    y_predictions = predict_gaussian_bayes(X_test, y_test, mean_c, variance_c, priors)
+
+    acc = np.mean(y_predictions == y_test)
+    print(f"Accuracy: {acc*100:.2f}%")
