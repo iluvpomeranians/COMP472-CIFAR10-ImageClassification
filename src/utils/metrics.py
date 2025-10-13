@@ -71,24 +71,24 @@ class Metrics:
         }
 
     @staticmethod
-    def compare_models(model1, model2=None, model3=None, model4=None):
+    def compare_models(*models):
 
-        models = [model1, model2, model3, model4]
-        table = []
-
-        for m in models:
-            if m is not None:
-                table.append([m['model'],
-                              m['accuracy'],
-                              m['precision'],
-                              m['recall'],
-                              m['f1']])
+        table = [
+            [m["model"], m["accuracy"], m["precision"], m["recall"], m["f1"]]
+            for m in models
+            if m is not None
+        ]
 
         print("\nModel Comparison:")
-        print(tabulate(table,
-                    headers=["Model", "Accuracy", "Precision", "Recall", "F1-Score"],
-                    floatfmt=".4f",
-                    tablefmt="fancy_grid"))
+        print(
+            tabulate(
+                table,
+                headers=["Model", "Accuracy", "Precision", "Recall", "F1-Score"],
+                floatfmt=".4f",
+                tablefmt="fancy_grid",
+            )
+        )
+
 
     @staticmethod
     def print_confusion_matrix(cm):
