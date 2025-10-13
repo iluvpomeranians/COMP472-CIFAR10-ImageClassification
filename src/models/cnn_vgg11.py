@@ -27,6 +27,7 @@
 #   these learned features to class probabilities for prediction.
 # -----------------------------------------------------------------------------
 
+import os
 import torch
 from tqdm import tqdm
 import torch.nn as nn
@@ -106,10 +107,11 @@ class VGG11(nn.Module):
         result = loss(outputs, labels)
         return result
 
+    @staticmethod
     def vgg_train(model, device="cuda", epochs=10):
         print(f"Training on device: {device}")
         model.to(device)
-        train_loader, test_loader = load_cifar10_vgg()
+        train_loader, _ = load_cifar10_vgg()
         criterion = nn.CrossEntropyLoss()
         optimizer = torch.optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
 
@@ -134,6 +136,33 @@ class VGG11(nn.Module):
             print(f"Epoch [{epoch+1}/{epochs}] | Loss: {avg_loss:.4f}")
 
         return model
+
+    @staticmethod
+    @staticmethod
+    def vgg_evaluate(model, device="cuda"):
+        model.to(device)
+        model.eval()
+        _, test_loader = load_cifar10_vgg()
+
+        all_preds = []
+        all_labels = []
+
+        with torch.no_grad():
+            for imgs, lbls in test_loader:
+                imgs, lbls = imgs.to(device), lbls.to(device)
+                outputs = model(imgs)
+                _, predicted = torch.max(outputs.data, 1)
+                all_preds.extend(predicted.cpu().numpy())
+                all_labels.extend(lbls.cpu().numpy())
+
+        return model, all_labels, all_preds
+
+
+    @staticmethod
+    def save_model(model, path="./models/trained/vgg11_cifar10.pth"):
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        torch.save(model.state_dict(), path)
+        print(f"Model saved to {path}")
 
     def vgg_test():
         pass

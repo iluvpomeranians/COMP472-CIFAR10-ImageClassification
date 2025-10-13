@@ -62,8 +62,20 @@ def main():
     # 4. CNN-VGG11
     #---------------------#
     print("\n=== Starting VGG11 Training ===")
-    vgg11 = VGG11()
-    VGG11.vgg_train(vgg11, device, epochs=10)
+    Vgg11Model = VGG11()
+    VGG11.vgg_train(Vgg11Model, device, epochs=10)
+    Vgg11Model, y_test_vgg, y_pred_vgg = VGG11.vgg_evaluate(Vgg11Model, device)
+
+    # Metrics + Confusion Matrix (just like Naive Bayes)
+    classifiers = Metrics.extract_classes()
+    vgg_cm = Metrics.confusion_matrix(y_test_vgg, y_pred_vgg, num_classes=10)
+    Metrics.tabulate_confusion_matrix(vgg_cm, matrix_name="VGG11 Confusion Matrix", class_labels=classifiers)
+    Metrics.export_confusion_matrix(vgg_cm, filename_prefix="vgg11_confusion_matrix", class_labels=classifiers)
+
+    model3 = Metrics.evaluate_model(y_test_vgg, y_pred_vgg, model_name="VGG11 CNN")
+    Metrics.compare_models(model1, model2, model3)
+
+    VGG11.save_model(Vgg11Model)
     print("=== Finished VGG11 Training ===")
 
 if __name__ == "__main__":
