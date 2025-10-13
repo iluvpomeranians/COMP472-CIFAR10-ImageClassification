@@ -1,15 +1,22 @@
-#TODO: Naive Bayes model
-
-# | Equation Term                      | What it corresponds to in your project               |                                                                |
-# | ---------------------------------- | ---------------------------------------------------- | -------------------------------------------------------------- |
-# | ( y )                              | One of the 10 CIFAR-10 classes (from `y_train`)      |                                                                |
-# | ( x_i )                            | One of the 50 PCA features (from a row in `X_train`) |                                                                |
-# | ( P(y) )                           | Class frequency (counts of `y_train` values)         |                                                                |
-# | ( P(x_i                            | y) )                                                 | Gaussian distribution (mean/variance) of feature i for class y |
-# | ( P(y                              | x) )                                                 | Posterior probability used for prediction                      |
-# | `GaussianNB.fit(X_train, y_train)` | Internally estimates all those means and variances   |                                                                |
-# | `GaussianNB.predict(X_test)`       | Applies the formula for each test vector             |                                                                |
-
+# -----------------------------------------------------------------------------
+# Gaussian (Normal) Probability Density Function:
+#
+#           1
+# P(x_i|y) = ----------------------------- * exp( - (x_i - μ_y)^2 / (2 * σ_y^2) )
+#             √(2 * π * σ_y^2)
+#
+# where:
+#   x_i   = value of feature i for a given sample
+#   μ_y   = mean of feature i for class y
+#   σ_y^2 = variance of feature i for class y
+#
+# In Naive Bayes:
+#   - Each feature i is assumed independent given the class y
+#   - The total class likelihood is the product of all P(x_i|y)
+#   - To avoid underflow, we use log-probabilities:
+#         log P(y|x) = log P(y) + Σ_i log P(x_i|y)
+# -----------------------------------------------------------------------------
+#
 # “If this were a cat, how likely would it be to see these 50 feature values?”
 # “If it were a dog, how likely?”
 # …and so on for all 10 classes.
