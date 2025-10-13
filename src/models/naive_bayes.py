@@ -22,8 +22,7 @@
 # …and so on for all 10 classes.
 
 import numpy as np
-import torch
-from torch.utils.data import DataLoader
+from sklearn.naive_bayes import GaussianNB
 
 def load_50npz():
     data = np.load("./data/features/features_cifar10_resnet18_pca50.npz")
@@ -106,6 +105,18 @@ def predict_gaussian_bayes_v2(X_test, means, variances, priors):
     y_pred = np.argmax(log_probs, axis=1)
     return y_pred
 
+def scikit_learn_gaussian_nb(X_train, y_train, X_test):
+    # model = GaussianNB()
+    # model.fit(X_train, y_train)
+    # return model.predict(X_test)
+    pass
+
+#TODO:
+# 0) Repeat with Scikit-learn's GaussianNB and compare results.
+# 1) Generate confusion matrix. Ensure that classesare clearly labeled,
+#    either directly on the matrix or using an accompanying legend.
+# 2) Summarize your findings in a table detailing the metrics accuracy, precision, recall, and F1- measure.
+#    The table must have separate rows for the four models and their variants.
 
 if __name__ == "__main__":
     X_train, y_train, X_test, y_test = load_50npz()
