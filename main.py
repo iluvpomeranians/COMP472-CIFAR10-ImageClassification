@@ -2,12 +2,13 @@
 # Project: CIFAR-10 Image Classification with ResNet Features and Naive Bayes
 # Authors: David Martinez (29556869) Thomas Kamil Brochet (40121143) ZJ ()
 
-from src.data_pipeline.data_loader import load_cifar10
-from torch.utils.data import DataLoader
-from src.data_pipeline.run_data_pipeline import main as run_data_pipeline_main
 import torch
+from torch.utils.data import DataLoader
+from src.data_pipeline.data_loader import load_cifar10
+from src.data_pipeline.run_data_pipeline import main as run_data_pipeline_main
 from src.utils.metrics import Metrics
 from src.models.naive_bayes import GaussianNaiveBayes
+from src.models.cnn_vgg11 import VGG11
 
 def check_cuda():
     if torch.cuda.is_available():
@@ -17,13 +18,17 @@ def check_cuda():
         print("CUDA is not available. Using CPU.")
 
 def main():
-
+    #---------------------#
+    # 0. Setup
+    #---------------------#
+    print("=== Starting Loading ===")
     # check_cuda()
     # run_data_pipeline_main()
     print("=== Finished Loading  ===")
 
-    # later steps will go here:
+    #---------------------#
     # 1. Naive Bayes
+    #---------------------#
     GaussModel = GaussianNaiveBayes()
     X_train, y_train, X_test, y_test = GaussModel.load_50npz()
     mean_c, variance_c, priors = GaussModel.fit(X_train, y_train)
@@ -40,9 +45,23 @@ def main():
 
     Metrics.compare_models(model1, model2)
 
+    #---------------------#
     # 2. Decision tree
+    #---------------------#
+    #TODO
+
+    #---------------------#
     # 3. MLP
-    # 4. VGG
+    #---------------------#
+    #TODO
+
+    #---------------------#
+    # 4. CNN-VGG11
+    #---------------------#
+    print("\n=== Starting VGG11 Training ===")
+    vgg11 = VGG11()
+    VGG11.vgg_train(vgg11, device='cpu', epochs=10)
+    print("=== Finished VGG11 Training ===")
 
 if __name__ == "__main__":
     main()
