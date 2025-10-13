@@ -44,8 +44,7 @@ def train_gaussian_bayes(X_train, y_train):
     return means, variances, priors
 
 #TODO: need to fix and simplify predict function
-def predict_gaussian_bayes(X_test, y_test, means, variances, priors):
-    print(f"X_test: {X_test.shape}  y_test: {y_test.shape}")
+def predict_gaussian_bayes(X_test, means, variances, priors):
     num_imgs = X_test.shape[0]
     num_features = X_test.shape[1]
     num_classes = 10
@@ -80,10 +79,32 @@ def predict_gaussian_bayes(X_test, y_test, means, variances, priors):
 
     return y_predicitons
 
+# This is a cleaner version of the predict function above
+# It does the same thing but without the nested loops over images and features
+def predict_gaussian_bayes_v2(X_test, means, variances, priors):
+    num_classes = len(means)
+    num_imgs, num_features = X_test.shape
+    log_probs = np.zeros((num_imgs, num_classes))
+
+    for c in range(num_classes):
+        mean_c = means[c]
+        var_c = variances[c]
+        prior_c = np.log(priors[c])
+
+        gaussian = P_xi_given_y(X_test, mean_c, var_c)
+
+        log_likelihoods = np.sum(np.log(gaussian + 1e-9), axis=1)
+        log_probs[:, c] = prior_c + log_likelihoods
+
+    y_pred = np.argmax(log_probs, axis=1)
+    return y_pred
+
+
 if __name__ == "__main__":
     X_train, y_train, X_test, y_test = load_50npz()
     mean_c, variance_c, priors = train_gaussian_bayes(X_train, y_train)
-    y_predictions = predict_gaussian_bayes(X_test, y_test, mean_c, variance_c, priors)
+    #y_predictions = predict_gaussian_bayes(X_test, mean_c, variance_c, priors)
+    y_predictions = predict_gaussian_bayes_v2(X_test, mean_c, variance_c, priors)
 
     acc = np.mean(y_predictions == y_test)
     print(f"Accuracy: {acc*100:.2f}%")
