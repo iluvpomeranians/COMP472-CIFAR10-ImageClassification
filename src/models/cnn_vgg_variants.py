@@ -18,6 +18,7 @@
 #   - Deep: slower training, potentially higher accuracy but more overfitting risk
 # -----------------------------------------------------------------------------
 
+import torch
 import torch.nn as nn
 from src.models.cnn_vgg11 import VGG11
 
@@ -26,46 +27,10 @@ from src.models.cnn_vgg11 import VGG11
 # 1: VGG11_Lite — fewer convolutional layers
 # -------------------------------------------------------------------------
 class VGG11_Lite(VGG11):
-    """Simplified version of VGG11 with one less 512×512 convolution block."""
     def __init__(self):
         super(VGG11_Lite, self).__init__()
 
-        self.features = nn.Sequential(
-            nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1),
-            nn.BatchNorm2d(64),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-
-            nn.Conv2d(64, 128, 3, 1, 1),
-            nn.BatchNorm2d(128),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(2, 2),
-
-            nn.Conv2d(128, 256, 3, 1, 1),
-            nn.BatchNorm2d(256),
-            nn.ReLU(inplace=True),
-
-            nn.Conv2d(256, 256, 3, 1, 1),
-            nn.BatchNorm2d(256),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(2, 2),
-
-            nn.Conv2d(256, 512, 3, 1, 1),
-            nn.BatchNorm2d(512),
-            nn.ReLU(inplace=True),
-            # ⚠ Removed one 512×512 block before final pooling
-            nn.MaxPool2d(2, 2),
-        )
-
-
-# -------------------------------------------------------------------------
-# 2: VGG11_Deep — extra convolutional layer (more depth)
-# -------------------------------------------------------------------------
-class VGG11_Deep(VGG11):
-    """Extended version of VGG11 with an additional 512×512 convolution block."""
-    def __init__(self):
-        super(VGG11_Deep, self).__init__()
-
+        # Replace feature extractor with a smaller stack (fewer layers)
         self.features = nn.Sequential(
             nn.Conv2d(3, 64, 3, 1, 1),
             nn.BatchNorm2d(64),
@@ -80,24 +45,68 @@ class VGG11_Deep(VGG11):
             nn.Conv2d(128, 256, 3, 1, 1),
             nn.BatchNorm2d(256),
             nn.ReLU(inplace=True),
+            nn.MaxPool2d(2, 2)
+        )
 
+        # Recompute flatten dimension dynamically
+        with torch.no_grad():
+            dummy_input = torch.zeros(1, 3, 32, 32)
+            out = self.features(dummy_input)
+            flatten_dim = out.numel() // out.shape[0]
+
+        # Rebuild classifier to match new flatten size
+        self.classifier = nn.Sequential(
+            nn.Linear(flatten_dim, 1024),
+            nn.ReLU(inplace=True),
+            nn.Dropout(0.5),
+            nn.Linear(1024, 10)
+        )
+
+
+class VGG11_Deep(VGG11):
+    def __init__(self):
+        super(VGG11_Deep, self).__init__()
+
+
+        self.features = nn.Sequential(
+            nn.Conv2d(3, 64, 3, 1, 1),
+            nn.BatchNorm2d(64),
+            nn.ReLU(inplace=True),
+
+            nn.Conv2d(64, 64, 3, 1, 1),
+            nn.BatchNorm2d(64),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(2, 2),
+
+            nn.Conv2d(64, 128, 3, 1, 1),
+            nn.BatchNorm2d(128),
+            nn.ReLU(inplace=True),
+
+            nn.Conv2d(128, 128, 3, 1, 1),
+            nn.BatchNorm2d(128),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(2, 2),
+
+            nn.Conv2d(128, 256, 3, 1, 1),
+            nn.BatchNorm2d(256),
+            nn.ReLU(inplace=True),
             nn.Conv2d(256, 256, 3, 1, 1),
             nn.BatchNorm2d(256),
             nn.ReLU(inplace=True),
-            nn.MaxPool2d(2, 2),
+            nn.MaxPool2d(2, 2)
+        )
 
-            nn.Conv2d(256, 512, 3, 1, 1),
-            nn.BatchNorm2d(512),
+        with torch.no_grad():
+            dummy_input = torch.zeros(1, 3, 32, 32)
+            out = self.features(dummy_input)
+            flatten_dim = out.numel() // out.shape[0]
+
+        self.classifier = nn.Sequential(
+            nn.Linear(flatten_dim, 4096),
             nn.ReLU(inplace=True),
-
-            nn.Conv2d(512, 512, 3, 1, 1),
-            nn.BatchNorm2d(512),
+            nn.Dropout(0.5),
+            nn.Linear(4096, 4096),
             nn.ReLU(inplace=True),
-
-            # ⬇️ Extra convolutional block (new depth)
-            nn.Conv2d(512, 512, 3, 1, 1),
-            nn.BatchNorm2d(512),
-            nn.ReLU(inplace=True),
-
-            nn.MaxPool2d(2, 2),
+            nn.Dropout(0.5),
+            nn.Linear(4096, 10)
         )

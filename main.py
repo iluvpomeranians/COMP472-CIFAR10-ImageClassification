@@ -2,6 +2,7 @@
 # Project: CIFAR-10 Image Classification with ResNet Features and Naive Bayes
 # Authors: David Martinez (29556869) Thomas Kamil Brochet (40121143) ZJ ()
 
+import os
 import torch
 from torch.utils.data import DataLoader
 from src.data_pipeline.data_loader import load_cifar10
@@ -27,7 +28,7 @@ def main():
     #---------------------#
     print("=== Starting Loading ===")
     device = check_cuda()
-    run_data_pipeline_main()
+    # run_data_pipeline_main()
     print("=== Finished Loading  ===")
 
     #---------------------#
@@ -67,7 +68,15 @@ def main():
     #---------------------#
     print("\n=== Starting VGG11 Training ===")
     Vgg11Model = VGG11()
+    model_path = "./src/models/trained/vgg11_cifar10.pth"
+    # --- Train Mode ---
     VGG11.vgg_train(Vgg11Model, device, epochs=10)
+    VGG11.save_model(Vgg11Model, model_path)
+
+    # --- Load Mode ---
+    # model_path = "./src/models/trained/vgg11_cifar10.pth"
+    # Vgg11Model.load_state_dict(torch.load(model_path, map_location=device), weights_only=True)
+    Vgg11Model.eval()
     Vgg11Model, y_test_vgg, y_pred_vgg = VGG11.vgg_evaluate(Vgg11Model, device)
 
     classifiers = Metrics.extract_classes()
