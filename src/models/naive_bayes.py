@@ -31,39 +31,55 @@ def P_xi_given_y(x_i, mean, variance):
     exponent = np.exp(-((x_i - mean) ** 2) / (2 * variance))
     return coeff * exponent
 
-def gaussian_naive_bayes(X_train, y_train):
-    X_c = None
-    mean_c = None
-    variance_c = None
-    probability_y = {}
-    total_log_probability = {}
+means = {}
+variances = {}
+priors = {}
+def train_gaussian_bayes(X_train, y_train):
     num_classes = 10
-    print(f"X_train: {X_train.shape}  y_train: {y_train.shape}")
-
     for c in range(num_classes):
         X_c = X_train[y_train == c]
-        mean_c = np.mean(X_c, axis=0)
-        variance_c = np.var(X_c, axis=0)
-        num_imgs = X_c.shape[0]
-        num_features = X_train.shape[1]
-        probability_y[c] = np.sum(y_train == c) / len(y_train)
+        means[c] = np.mean(X_c, axis=0)
+        variances[c] = np.var(X_c, axis=0)
+        priors[c] = np.sum(y_train == c) / len(y_train)
+    return means, variances, priors
+
+#TODO: need to fix and simplify predict function
+def predict_gaussian_bayes(X_test, y_test, means, variances, priors):
+    num_imgs = X_test.shape[0]
+    num_features = X_test.shape[1]
+    total_log_probability = {}
+    num_classes = 10
+    print(f"X_test: {X_test.shape}  y_test: {y_test.shape}")
+    current_log_probability = np.zeros((num_imgs, num_classes))
+
+    for c in range(num_classes):
+        mean_c = means[c]
+        variance_c = variances[c]
+        prior_c = np.log(priors[c])
 
         for img_index in range(num_imgs):
-            print(f"Class {c}, Image {img_index}: {X_c[img_index]}")
+            # print(f"Class {c}, Image {img_index}: {X_test[img_index]}")
             sum_log_gaussian_density = 0.0
 
             for feature_index in range(num_features):
                 curr_mean = mean_c[feature_index]
                 curr_variance = variance_c[feature_index]
 
-                gaussian_probability_density = P_xi_given_y(X_c[img_index][feature_index], curr_mean, curr_variance)
+                gaussian_probability_density = P_xi_given_y(X_test[img_index][feature_index], curr_mean, curr_variance)
                 # print(f"Feature {feature_index}: mean={curr_mean}, variance={curr_variance}")
                 # print(f"P(x_i|y) = {gaussian_probability_density, curr_mean, curr_variance}")
-                sum_log_gaussian_density += np.log(gaussian_probability_density + 1e-9)  # Avoid log(0)
-            total_log_probability[c] = np.log(probability_y[c]) + sum_log_gaussian_density
-            print(f"Total probability for class {c}: { np.exp(total_log_probability[c])}")
+                sum_log_gaussian_density += np.log(gaussian_probability_density + 1e-9)
+
+            current_log_probability[img_index][c] = prior_c + sum_log_gaussian_density
+            # print(f"Total probability for class {c}: { np.exp(current_log_probability[img_index][c])}")
+            if c == (num_classes - 1):
+                highest_prob_class = np.argmax(current_log_probability[img_index])
+                print(f"Predicted class for image {img_index}: {highest_prob_class} with probability {np.exp(current_log_probability[img_index][highest_prob_class])}")
+
+        total_log_probability[c] = current_log_probability
     return
 
 if __name__ == "__main__":
     X_train, y_train, X_test, y_test = load_50npz()
-    gaussian_naive_bayes(X_train, y_train)
+    mean_c, variance_c, priors = train_gaussian_bayes(X_train, y_train)
+    predict_gaussian_bayes(X_test, y_test, mean_c, variance_c, priors)
