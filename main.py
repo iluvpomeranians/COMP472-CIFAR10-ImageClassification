@@ -4,117 +4,146 @@
 
 import os
 import torch
-from torch.utils.data import DataLoader
-from src.data_pipeline.data_loader import load_cifar10
 from src.data_pipeline.run_data_pipeline import main as run_data_pipeline_main
 from src.utils.metrics import Metrics
 from src.models.naive_bayes import GaussianNaiveBayes
 from src.models.cnn_vgg11 import VGG11
 from src.models.cnn_vgg_variants import VGG11_Lite, VGG11_Deep
 
+
 def check_cuda():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     if torch.cuda.is_available():
-        print("CUDA is available. Using GPU.")
-        print("GPU in use:", torch.cuda.get_device_name(0))
+        print(f"CUDA is available. Using GPU: {torch.cuda.get_device_name(0)}")
     else:
         print("CUDA is not available. Using CPU.")
-
     return device
+
 
 def main():
     #---------------------#
     # 0. Setup
     #---------------------#
-    print("=== Starting Loading ===")
+    print("=== Starting Setup ===")
     device = check_cuda()
-    run_data_pipeline_main()
-    print("=== Finished Loading  ===")
+
+    # Check if processed CIFAR-10 feature file already exists
+    npz_path = "./data/features/features_cifar10_resnet18_pca50.npz"
+    if os.path.exists(npz_path):
+        print(f"[✓] Found cached feature file: {npz_path}")
+    else:
+        print("[⟳] Feature file not found — running data pipeline...")
+        run_data_pipeline_main()
+
+    print("=== Finished Setup ===\n")
 
     #---------------------#
     # 1. Naive Bayes
     #---------------------#
+    print("=== Starting Naive Bayes Evaluation ===")
     GaussModel = GaussianNaiveBayes()
     X_train, y_train, X_test, y_test = GaussModel.load_50npz()
     mean_c, variance_c, priors = GaussModel.fit(X_train, y_train)
     y_pred = GaussModel.predict_gaussian_bayes_v2(X_test, mean_c, variance_c, priors)
 
     classifiers = Metrics.extract_classes()
-    naive_gauss_cm = Metrics.confusion_matrix(y_test, y_pred, num_classes=10)
-    Metrics.tabulate_confusion_matrix(naive_gauss_cm, matrix_name="Gauss Naive Bayes Confusion Matrix", class_labels=classifiers)
-    Metrics.export_confusion_matrix(naive_gauss_cm, filename_prefix="naive_bayes_confusion_matrix", class_labels=classifiers)
-    gauss_metrics = Metrics.evaluate_model(y_test, y_pred, model_name="Gauss Naive Bayes")
+    nb_cm = Metrics.confusion_matrix(y_test, y_pred, num_classes=10)
+    Metrics.tabulate_confusion_matrix(nb_cm, "Gauss Naive Bayes Confusion Matrix", classifiers)
+    Metrics.export_confusion_matrix(nb_cm, "naive_bayes_confusion_matrix", classifiers)
+    gauss_metrics = Metrics.evaluate_model(y_test, y_pred, "Gauss Naive Bayes")
 
     _, y_pred_scikit = GaussianNaiveBayes.scikit_learn_gaussian_nb(X_train, y_train, X_test)
-    scikit_metrics = Metrics.evaluate_model(y_test, y_pred_scikit, model_name="Scikit-learn GaussianNB")
-    scikit_cm = Metrics.confusion_matrix(y_test, y_pred_scikit, num_classes=10)
-    Metrics.tabulate_confusion_matrix(scikit_cm, matrix_name="Scikit-learn GaussianNB Confusion Matrix", class_labels=classifiers)
-    Metrics.export_confusion_matrix(scikit_cm, filename_prefix="scikit_gaussian_nb_confusion_matrix", class_labels=classifiers)
+    scikit_metrics = Metrics.evaluate_model(y_test, y_pred_scikit, "Scikit-learn GaussianNB")
 
     Metrics.compare_models(gauss_metrics, scikit_metrics)
 
     #---------------------#
-    # 2. Decision tree
+    # 2. Decision Tree
     #---------------------#
-    #TODO
+    print("\n=== Decision Tree Classifier ===")
+    # TODO: Implement Decision Tree Classifier using Scikit-learn
+    # - Use features from load_50npz()
+    # - Train DecisionTreeClassifier()
+    # - Evaluate accuracy, precision, recall, F1, confusion matrix
+    # - Save metrics and append to comparison table
 
     #---------------------#
-    # 3. MLP
+    # 3. MLP Classifier
     #---------------------#
-    #TODO
+    print("\n=== Multi-Layer Perceptron (MLP) ===")
+    # TODO: Implement MLP (using either PyTorch or Scikit-learn MLPClassifier)
+    # - Input size matches ResNet features (512)
+    # - Hidden layers: e.g. 256 → 128 → 10
+    # - Use ReLU activations, CrossEntropyLoss, SGD/Adam
+    # - Save model, evaluate, and append metrics
 
     #---------------------#
-    # 4. CNN-VGG11
+    # 4. CNN Models (VGG11 + Variants)
     #---------------------#
-    print("\n=== Starting VGG11 Training ===")
-    Vgg11Model = VGG11()
-    model_path = "./src/models/trained/vgg11_cifar10.pth"
-    # --- Train Mode ---
-    VGG11.vgg_train(Vgg11Model, device, epochs=10)
-    VGG11.save_model(Vgg11Model, model_path)
-
-    # --- Load Mode ---
-    # model_path = "./src/models/trained/vgg11_cifar10.pth"
-    # Vgg11Model.load_state_dict(torch.load(model_path, map_location=device), weights_only=True)
-    Vgg11Model.eval()
-    Vgg11Model, y_test_vgg, y_pred_vgg = VGG11.vgg_evaluate(Vgg11Model, device)
-
     classifiers = Metrics.extract_classes()
+
+    # --- VGG11 ---
+    print("\n=== VGG11 ===")
+    vgg11_path = "./models/trained/vgg11_cifar10.pth"
+    Vgg11Model = VGG11()
+
+    if os.path.exists(vgg11_path):
+        print(f"[✓] Found pretrained VGG11: {vgg11_path}")
+        state_dict = torch.load(vgg11_path, map_location=device)
+        Vgg11Model.load_state_dict(state_dict)
+    else:
+        print("[⟳] Training VGG11 from scratch...")
+        VGG11.vgg_train(Vgg11Model, device, epochs=10)
+        VGG11.save_model(Vgg11Model, vgg11_path)
+
+    Vgg11Model, y_test_vgg, y_pred_vgg = VGG11.vgg_evaluate(Vgg11Model, device)
+    vgg11_metrics = Metrics.evaluate_model(y_test_vgg, y_pred_vgg, "VGG11 CNN")
     vgg_cm = Metrics.confusion_matrix(y_test_vgg, y_pred_vgg, num_classes=10)
-    Metrics.tabulate_confusion_matrix(vgg_cm, matrix_name="VGG11 Confusion Matrix", class_labels=classifiers)
-    Metrics.export_confusion_matrix(vgg_cm, filename_prefix="vgg11_confusion_matrix", class_labels=classifiers)
+    Metrics.export_confusion_matrix(vgg_cm, "vgg11_confusion_matrix", classifiers)
 
-    vgg11_metrics = Metrics.evaluate_model(y_test_vgg, y_pred_vgg, model_name="VGG11 CNN")
-    Metrics.compare_models(gauss_metrics, scikit_metrics, vgg11_metrics)
-
-    VGG11.save_model(Vgg11Model)
-
-    # --- Train VGG11-Lite ---
-    print("\n=== Starting VGG11-Lite Training ===")
+    # --- VGG11-Lite ---
+    print("\n=== VGG11-Lite ===")
+    vgg11_lite_path = "./models/trained/vgg11_lite_cifar10.pth"
     VggLiteModel = VGG11_Lite()
-    VGG11.vgg_train(VggLiteModel, device, epochs=10)
+
+    if os.path.exists(vgg11_lite_path):
+        print(f"[✓] Found pretrained VGG11-Lite: {vgg11_lite_path}")
+        VggLiteModel.load_state_dict(torch.load(vgg11_lite_path, map_location=device))
+    else:
+        print("[⟳] Training VGG11-Lite from scratch...")
+        VGG11.vgg_train(VggLiteModel, device, epochs=10)
+        VGG11.save_model(VggLiteModel, vgg11_lite_path)
+
     VggLiteModel, y_test_lite, y_pred_lite = VGG11.vgg_evaluate(VggLiteModel, device)
-    vgglite_cm = Metrics.confusion_matrix(y_test_lite, y_pred_lite, num_classes=10)
-    Metrics.tabulate_confusion_matrix(vgglite_cm, matrix_name="VGG11-Lite Confusion Matrix", class_labels=classifiers)
-    Metrics.export_confusion_matrix(vgglite_cm, filename_prefix="vgg11_lite_confusion_matrix", class_labels=classifiers)
-    vgg11_lite_metrics = Metrics.evaluate_model(y_test_lite, y_pred_lite, model_name="VGG11-Lite CNN")
-    VGG11.save_model(VggLiteModel, "./models/trained/vgg11_lite_cifar10.pth")
+    vgg11_lite_metrics = Metrics.evaluate_model(y_test_lite, y_pred_lite, "VGG11-Lite CNN")
 
-    # --- Train VGG11-Deep ---
-    print("\n=== Starting VGG11-Deep Training ===")
+    # --- VGG11-Deep ---
+    print("\n=== VGG11-Deep ===")
+    vgg11_deep_path = "./src/models/trained/vgg11_deep_cifar10.pth"
     VggDeepModel = VGG11_Deep()
-    VGG11.vgg_train(VggDeepModel, device, epochs=10)
+
+    if os.path.exists(vgg11_deep_path):
+        print(f"[✓] Found pretrained VGG11-Deep: {vgg11_deep_path}")
+        VggDeepModel.load_state_dict(torch.load(vgg11_deep_path, map_location=device))
+    else:
+        print("[⟳] Training VGG11-Deep from scratch...")
+        VGG11.vgg_train(VggDeepModel, device, epochs=10)
+        VGG11.save_model(VggDeepModel, vgg11_deep_path)
+
     VggDeepModel, y_test_deep, y_pred_deep = VGG11.vgg_evaluate(VggDeepModel, device)
-    vgg11_deep_metrics = Metrics.evaluate_model(y_test_deep, y_pred_deep, model_name="VGG11-Deep CNN")
-    vggdeep_cm = Metrics.confusion_matrix(y_test_deep, y_pred_deep, num_classes=10)
-    Metrics.tabulate_confusion_matrix(vggdeep_cm, matrix_name="VGG11-Deep Confusion Matrix", class_labels=classifiers)
-    Metrics.export_confusion_matrix(vggdeep_cm, filename_prefix="vgg11_deep_confusion_matrix", class_labels=classifiers)
-    VGG11.save_model(VggDeepModel, "./models/trained/vgg11_deep_cifar10.pth")
+    vgg11_deep_metrics = Metrics.evaluate_model(y_test_deep, y_pred_deep, "VGG11-Deep CNN")
 
-    print("=== Finished VGG11 Training ===")
-    # --- Compare all ---
-    Metrics.compare_models(gauss_metrics, scikit_metrics, vgg11_metrics, vgg11_lite_metrics, vgg11_deep_metrics)
-
+    #---------------------#
+    # 5. Final Comparison
+    #---------------------#
+    print("\n=== Final Model Comparison ===")
+    Metrics.compare_models(
+        gauss_metrics,
+        scikit_metrics,
+        vgg11_metrics,
+        vgg11_lite_metrics,
+        vgg11_deep_metrics
+    )
 
 
 if __name__ == "__main__":
