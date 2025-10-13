@@ -28,7 +28,7 @@ def main():
     #---------------------#
     print("=== Starting Loading ===")
     device = check_cuda()
-    # run_data_pipeline_main()
+    run_data_pipeline_main()
     print("=== Finished Loading  ===")
 
     #---------------------#
