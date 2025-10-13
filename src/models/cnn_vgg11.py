@@ -107,6 +107,7 @@ class VGG11(nn.Module):
         return result
 
     def vgg_train(model, device="cuda", epochs=10):
+        print(f"Training on device: {device}")
         model.to(device)
         train_loader, test_loader = load_cifar10_vgg()
         criterion = nn.CrossEntropyLoss()

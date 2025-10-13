@@ -11,18 +11,21 @@ from src.models.naive_bayes import GaussianNaiveBayes
 from src.models.cnn_vgg11 import VGG11
 
 def check_cuda():
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     if torch.cuda.is_available():
         print("CUDA is available. Using GPU.")
         print("GPU in use:", torch.cuda.get_device_name(0))
     else:
         print("CUDA is not available. Using CPU.")
 
+    return device
+
 def main():
     #---------------------#
     # 0. Setup
     #---------------------#
     print("=== Starting Loading ===")
-    # check_cuda()
+    device = check_cuda()
     # run_data_pipeline_main()
     print("=== Finished Loading  ===")
 
@@ -60,7 +63,7 @@ def main():
     #---------------------#
     print("\n=== Starting VGG11 Training ===")
     vgg11 = VGG11()
-    VGG11.vgg_train(vgg11, device='cpu', epochs=10)
+    VGG11.vgg_train(vgg11, device, epochs=10)
     print("=== Finished VGG11 Training ===")
 
 if __name__ == "__main__":
