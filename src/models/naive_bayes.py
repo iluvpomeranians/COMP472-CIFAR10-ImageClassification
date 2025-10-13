@@ -24,105 +24,109 @@
 import numpy as np
 from sklearn.naive_bayes import GaussianNB
 
-def load_50npz():
-    data = np.load("./data/features/features_cifar10_resnet18_pca50.npz")
-    X_train, y_train = data["X_train"], data["y_train"]
-    X_test,  y_test  = data["X_test"],  data["y_test"]
-    print (f"Loaded PCA-reduced features: X_train={X_train.shape}, X_test={X_test.shape}")
-    return X_train, y_train, X_test, y_test
+class GaussianNaiveBayes:
+    def __init__(self):
+        self.means = {}
+        self.variances = {}
+        self.priors = {}
+        self.num_classes = 10
 
-def P_xi_given_y(x_i, mean, variance):
-    # Gaussian probability density function
-    coeff = 1.0 / np.sqrt(2.0 * np.pi * variance)
-    exponent = np.exp(-((x_i - mean) ** 2) / (2 * variance))
-    return coeff * exponent
+    def _gaussian_pdf(self, x_i, mean, variance):
+        # Gaussian probability density function
+        coeff = 1.0 / np.sqrt(2.0 * np.pi * variance)
+        exponent = np.exp(-((x_i - mean) ** 2) / (2 * variance))
+        return coeff * exponent
 
-means = {}
-variances = {}
-priors = {}
-def train_gaussian_bayes(X_train, y_train):
-    num_classes = 10
-    for c in range(num_classes):
-        X_c = X_train[y_train == c]
-        means[c] = np.mean(X_c, axis=0)
-        variances[c] = np.var(X_c, axis=0)
-        priors[c] = np.sum(y_train == c) / len(y_train)
-    return means, variances, priors
+    def load_50npz(self):
+        data = np.load("./data/features/features_cifar10_resnet18_pca50.npz")
+        X_train, y_train = data["X_train"], data["y_train"]
+        X_test,  y_test  = data["X_test"],  data["y_test"]
+        print (f"Loaded PCA-reduced features: X_train={X_train.shape}, X_test={X_test.shape}")
+        return X_train, y_train, X_test, y_test
 
-#TODO: need to fix and simplify predict function
-def predict_gaussian_bayes(X_test, means, variances, priors):
-    num_imgs = X_test.shape[0]
-    num_features = X_test.shape[1]
-    num_classes = 10
-    current_log_probability = np.zeros((num_imgs, num_classes))
-    y_predicitons = np.zeros(num_imgs)
 
-    for c in range(num_classes):
-        mean_c = means[c]
-        variance_c = variances[c]
-        prior_c = np.log(priors[c])
+    def fit(self, X_train, y_train):
+        num_classes = 10
+        for c in range(num_classes):
+            X_c = X_train[y_train == c]
+            self.means[c] = np.mean(X_c, axis=0)
+            self.variances[c] = np.var(X_c, axis=0)
+            self.priors[c] = np.sum(y_train == c) / len(y_train)
+        return self.means, self.variances, self.priors
 
-        for img_index in range(num_imgs):
-            # print(f"Class {c}, Image {img_index}: {X_test[img_index]}")
-            sum_log_gaussian_density = 0.0
+    # First version with detailed logging
+    def predict_gaussian_bayes_v1(self, X_test, means, variances, priors):
+        num_imgs = X_test.shape[0]
+        num_features = X_test.shape[1]
+        num_classes = 10
+        current_log_probability = np.zeros((num_imgs, num_classes))
+        y_predicitons = np.zeros(num_imgs)
 
-            for feature_index in range(num_features):
-                curr_mean = mean_c[feature_index]
-                curr_variance = variance_c[feature_index]
+        for c in range(num_classes):
+            mean_c = means[c]
+            variance_c = variances[c]
+            prior_c = np.log(priors[c])
 
-                gaussian_probability_density = P_xi_given_y(X_test[img_index][feature_index], curr_mean, curr_variance)
-                # print(f"Feature {feature_index}: mean={curr_mean}, variance={curr_variance}")
-                # print(f"P(x_i|y) = {gaussian_probability_density, curr_mean, curr_variance}")
-                sum_log_gaussian_density += np.log(gaussian_probability_density + 1e-9)
+            for img_index in range(num_imgs):
+                # print(f"Class {c}, Image {img_index}: {X_test[img_index]}")
+                sum_log_gaussian_density = 0.0
 
-            current_log_probability[img_index][c] = prior_c + sum_log_gaussian_density
-            # print(f"Total probability for class {c}: { np.exp(current_log_probability[img_index][c])}")
-            if c == (num_classes - 1):
-                y_prediction = np.argmax(current_log_probability[img_index])
-                current_probability = np.exp(current_log_probability[img_index][y_prediction])
-                print(f"Predicted class for image {img_index}: {y_prediction} with probability {current_probability}")
-                y_predicitons[img_index] = y_prediction
+                for feature_index in range(num_features):
+                    curr_mean = mean_c[feature_index]
+                    curr_variance = variance_c[feature_index]
 
-    return y_predicitons
+                    gaussian_probability_density = self._gaussian_pdf(X_test[img_index][feature_index], curr_mean, curr_variance)
+                    # print(f"Feature {feature_index}: mean={curr_mean}, variance={curr_variance}")
+                    # print(f"P(x_i|y) = {gaussian_probability_density, curr_mean, curr_variance}")
+                    sum_log_gaussian_density += np.log(gaussian_probability_density + 1e-9)
 
-# This is a cleaner version of the predict function above
-# It does the same thing but without the nested loops over images and features
-def predict_gaussian_bayes_v2(X_test, means, variances, priors):
-    num_classes = len(means)
-    num_imgs, num_features = X_test.shape
-    log_probs = np.zeros((num_imgs, num_classes))
+                current_log_probability[img_index][c] = prior_c + sum_log_gaussian_density
+                # print(f"Total probability for class {c}: { np.exp(current_log_probability[img_index][c])}")
+                if c == (num_classes - 1):
+                    y_prediction = np.argmax(current_log_probability[img_index])
+                    current_probability = np.exp(current_log_probability[img_index][y_prediction])
+                    print(f"Predicted class for image {img_index}: {y_prediction} with probability {current_probability}")
+                    y_predicitons[img_index] = y_prediction
 
-    for c in range(num_classes):
-        mean_c = means[c]
-        var_c = variances[c]
-        prior_c = np.log(priors[c])
+        return y_predicitons
 
-        gaussian = P_xi_given_y(X_test, mean_c, var_c)
+    # Version 2:
+    # This is a cleaner version of the predict function above
+    # It does the same thing but without the nested loops
+    def predict_gaussian_bayes_v2(self, X_test, means, variances, priors):
+        num_classes = len(means)
+        num_imgs, num_features = X_test.shape
+        log_probs = np.zeros((num_imgs, num_classes))
 
-        log_likelihoods = np.sum(np.log(gaussian + 1e-9), axis=1)
-        log_probs[:, c] = prior_c + log_likelihoods
+        for c in range(num_classes):
+            mean_c = means[c]
+            var_c = variances[c]
+            prior_c = np.log(priors[c])
 
-    y_pred = np.argmax(log_probs, axis=1)
-    return y_pred
+            gaussian = self._gaussian_pdf(X_test, mean_c, var_c)
 
-def scikit_learn_gaussian_nb(X_train, y_train, X_test):
-    # model = GaussianNB()
-    # model.fit(X_train, y_train)
-    # return model.predict(X_test)
-    pass
+            log_likelihoods = np.sum(np.log(gaussian + 1e-9), axis=1)
+            log_probs[:, c] = prior_c + log_likelihoods
 
-#TODO:
-# 0) Repeat with Scikit-learn's GaussianNB and compare results.
-# 1) Generate confusion matrix. Ensure that classesare clearly labeled,
-#    either directly on the matrix or using an accompanying legend.
-# 2) Summarize your findings in a table detailing the metrics accuracy, precision, recall, and F1- measure.
-#    The table must have separate rows for the four models and their variants.
+        y_pred = np.argmax(log_probs, axis=1)
+        return y_pred
+
+    def scikit_learn_gaussian_nb(X_train, y_train, X_test):
+        # model = GaussianNB()
+        # model.fit(X_train, y_train)
+        # return model.predict(X_test)
+        pass
+
+    #TODO:
+    # 0) Repeat with Scikit-learn's GaussianNB and compare results.
+    # 2) Summarize your findings in a table detailing the metrics accuracy, precision, recall, and F1- measure.
+    #    The table must have separate rows for the four models and their variants.
 
 if __name__ == "__main__":
-    X_train, y_train, X_test, y_test = load_50npz()
-    mean_c, variance_c, priors = train_gaussian_bayes(X_train, y_train)
-    #y_predictions = predict_gaussian_bayes(X_test, mean_c, variance_c, priors)
-    y_predictions = predict_gaussian_bayes_v2(X_test, mean_c, variance_c, priors)
+    model = GaussianNaiveBayes()
+    X_train, y_train, X_test, y_test = GaussianNaiveBayes.load_50npz()
+    mean_c, variance_c, priors = GaussianNaiveBayes.fit(model, X_train, y_train)
+    y_predictions = GaussianNaiveBayes.predict_gaussian_bayes_v2(model, X_test, mean_c, variance_c, priors)
 
     acc = np.mean(y_predictions == y_test)
     print(f"Accuracy: {acc*100:.2f}%")
