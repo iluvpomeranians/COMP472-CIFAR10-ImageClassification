@@ -82,8 +82,16 @@ class VGG11(nn.Module):
         )
 
         # Classifier (fully-connected head)
+        # Automatically infer the number of features after convolutional layers
+        # so that the classifier input adapts to any variant architecture.
+        with torch.no_grad():
+            dummy_input = torch.zeros(1, 3, 32, 32)  # stays on CPU during init
+            out = self.features(dummy_input)
+            flatten_dim = out.numel() // out.shape[0]
+
+        # Fully connected classifier (adapts to flatten_dim)
         self.classifier = nn.Sequential(
-            nn.Linear(512, 4096),
+            nn.Linear(flatten_dim, 4096),
             nn.ReLU(inplace=True),
             nn.Dropout(0.5),
 
@@ -93,6 +101,7 @@ class VGG11(nn.Module):
 
             nn.Linear(4096, self.num_classes)
         )
+
 
     # Defines the how the input tensor flows through the network
     # (image → conv layers → flatten → dense layers → logits)
@@ -137,7 +146,6 @@ class VGG11(nn.Module):
 
         return model
 
-    @staticmethod
     @staticmethod
     def vgg_evaluate(model, device="cuda"):
         model.to(device)
