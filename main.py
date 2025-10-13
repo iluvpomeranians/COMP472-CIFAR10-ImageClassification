@@ -28,10 +28,17 @@ def main():
     X_train, y_train, X_test, y_test = GaussModel.load_50npz()
     mean_c, variance_c, priors = GaussModel.fit(X_train, y_train)
     y_pred = GaussModel.predict_gaussian_bayes_v2(X_test, mean_c, variance_c, priors)
+
+    classifiers = Metrics.extract_classes()
     naive_gauss_cm = Metrics.confusion_matrix(y_test, y_pred, num_classes=10)
-    Metrics.tabulate_confusion_matrix(naive_gauss_cm, matrix_name="Gauss Naive Bayes Confusion Matrix")
-    Metrics.export_confusion_matrix(naive_gauss_cm, filename_prefix="naive_bayes_confusion_matrix")
-    Metrics.evaluate_model(y_test, y_pred, model_name="Gauss Naive Bayes")
+    Metrics.tabulate_confusion_matrix(naive_gauss_cm, matrix_name="Gauss Naive Bayes Confusion Matrix", class_labels=classifiers)
+    Metrics.export_confusion_matrix(naive_gauss_cm, filename_prefix="naive_bayes_confusion_matrix", class_labels=classifiers)
+    model1 = Metrics.evaluate_model(y_test, y_pred, model_name="Gauss Naive Bayes")
+
+    _, y_pred_scikit = GaussianNaiveBayes.scikit_learn_gaussian_nb(X_train, y_train, X_test)
+    model2 = Metrics.evaluate_model(y_test, y_pred_scikit, model_name="Scikit-learn GaussianNB")
+
+    Metrics.compare_models(model1, model2)
 
     # 2. Decision tree
     # 3. MLP

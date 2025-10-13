@@ -1,6 +1,8 @@
 import torch
 from torchvision import datasets, transforms
 
+CIFAR10_CLASSES = None
+
 def load_cifar10(root="./data/raw"):
     transform = transforms.Compose([
         transforms.Resize((224, 224)),                    # Resize to 224x224 for models like ResNet

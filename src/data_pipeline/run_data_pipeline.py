@@ -48,7 +48,7 @@ def run_script(module_name: str) -> None:
 
 
 # ------------------------------------------------------------
-# Main orchestrator
+# Main
 # ------------------------------------------------------------
 def main() -> None:
     print("INFO: Starting full data pipeline...\n")

@@ -44,7 +44,7 @@ class GaussianNaiveBayes:
         print (f"Loaded PCA-reduced features: X_train={X_train.shape}, X_test={X_test.shape}")
         return X_train, y_train, X_test, y_test
 
-
+    # STEP I: Fit the model to the training data
     def fit(self, X_train, y_train):
         num_classes = 10
         for c in range(num_classes):
@@ -54,7 +54,7 @@ class GaussianNaiveBayes:
             self.priors[c] = np.sum(y_train == c) / len(y_train)
         return self.means, self.variances, self.priors
 
-    # First version with detailed logging
+    # STEP I: First version with detailed logging
     def predict_gaussian_bayes_v1(self, X_test, means, variances, priors):
         num_imgs = X_test.shape[0]
         num_features = X_test.shape[1]
@@ -90,7 +90,7 @@ class GaussianNaiveBayes:
 
         return y_predicitons
 
-    # Version 2:
+    # STEP I, Version 2:
     # This is a cleaner version of the predict function above
     # It does the same thing but without the nested loops
     def predict_gaussian_bayes_v2(self, X_test, means, variances, priors):
@@ -111,22 +111,11 @@ class GaussianNaiveBayes:
         y_pred = np.argmax(log_probs, axis=1)
         return y_pred
 
+    # STEP II: Scikit-learn's GaussianNB for comparison
+    @staticmethod
     def scikit_learn_gaussian_nb(X_train, y_train, X_test):
-        # model = GaussianNB()
-        # model.fit(X_train, y_train)
-        # return model.predict(X_test)
-        pass
+        model = GaussianNB()
+        model.fit(X_train, y_train)
+        y_pred = model.predict(X_test)
+        return model, y_pred
 
-    #TODO:
-    # 0) Repeat with Scikit-learn's GaussianNB and compare results.
-    # 2) Summarize your findings in a table detailing the metrics accuracy, precision, recall, and F1- measure.
-    #    The table must have separate rows for the four models and their variants.
-
-if __name__ == "__main__":
-    model = GaussianNaiveBayes()
-    X_train, y_train, X_test, y_test = GaussianNaiveBayes.load_50npz()
-    mean_c, variance_c, priors = GaussianNaiveBayes.fit(model, X_train, y_train)
-    y_predictions = GaussianNaiveBayes.predict_gaussian_bayes_v2(model, X_test, mean_c, variance_c, priors)
-
-    acc = np.mean(y_predictions == y_test)
-    print(f"Accuracy: {acc*100:.2f}%")

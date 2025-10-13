@@ -34,6 +34,7 @@
 import numpy as np
 import pandas as pd
 import os
+import pickle
 from tabulate import tabulate
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 from src.models.naive_bayes import GaussianNaiveBayes as GaussModel
@@ -70,6 +71,26 @@ class Metrics:
         }
 
     @staticmethod
+    def compare_models(model1, model2=None, model3=None, model4=None):
+
+        models = [model1, model2, model3, model4]
+        table = []
+
+        for m in models:
+            if m is not None:
+                table.append([m['model'],
+                              m['accuracy'],
+                              m['precision'],
+                              m['recall'],
+                              m['f1']])
+
+        print("\nModel Comparison:")
+        print(tabulate(table,
+                    headers=["Model", "Accuracy", "Precision", "Recall", "F1-Score"],
+                    floatfmt=".4f",
+                    tablefmt="fancy_grid"))
+
+    @staticmethod
     def print_confusion_matrix(cm):
         print("Confusion Matrix:")
         print("Predicted →", end="")
@@ -83,18 +104,18 @@ class Metrics:
             print()
 
     @staticmethod
-    def tabulate_confusion_matrix(cm, matrix_name="Confusion Matrix"):
-        headers = [f"Pred {i}" for i in range(cm.shape[1])]
-        index = [f"Act {i}" for i in range(cm.shape[0])]
+    def tabulate_confusion_matrix(cm, matrix_name="Confusion Matrix", class_labels=None):
+        headers = [f"Pred {i}\n({class_labels[i]})" for i in range(cm.shape[1])]
+        index = [f"Act {i}\n({class_labels[i]})" for i in range(cm.shape[0])]
         table = np.column_stack((index, cm))
         print(f"\n{matrix_name}:")
         print(tabulate(table, headers=[" "] + headers, tablefmt="fancy_grid"))
 
     @staticmethod
-    def export_confusion_matrix(cm, filename_prefix="confusion_matrix"):
+    def export_confusion_matrix(cm, filename_prefix="confusion_matrix", class_labels=None):
         df = pd.DataFrame(cm,
-                          index=[f"Actual {i}" for i in range(cm.shape[0])],
-                          columns=[f"Pred {i}" for i in range(cm.shape[1])])
+                          index=[f"Act {i}\n({class_labels[i]})" for i in range(cm.shape[0])],
+                          columns=[f"Pred {i}\n({class_labels[i]})" for i in range(cm.shape[1])])
 
         csv_path = f"src/utils/results/{filename_prefix}.csv"
         os.makedirs(os.path.dirname(csv_path), exist_ok=True)
@@ -112,3 +133,13 @@ class Metrics:
                                  label=filename_prefix.replace(" ", "_").lower(),
                                  ))
         #print(f"Saved LaTeX table to {tex_path}")
+
+    @staticmethod
+    def extract_classes():
+        meta_path = os.path.join("data", "raw", "cifar-10-batches-py", "batches.meta")
+
+        with open(meta_path, "rb") as f:
+            meta_dict = pickle.load(f, encoding="latin1")
+
+        class_names = meta_dict["label_names"]
+        return class_names
