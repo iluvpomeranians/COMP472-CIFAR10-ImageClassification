@@ -84,7 +84,7 @@ def main():
 
     # --- VGG11 ---
     print("\n=== VGG11 ===")
-    vgg11_path = "./models/trained/vgg11_cifar10.pth"
+    vgg11_path = "./src/models/trained/vgg11_cifar10.pth"
     Vgg11Model = VGG11()
 
     if os.path.exists(vgg11_path):
@@ -103,7 +103,7 @@ def main():
 
     # --- VGG11-Lite ---
     print("\n=== VGG11-Lite ===")
-    vgg11_lite_path = "./models/trained/vgg11_lite_cifar10.pth"
+    vgg11_lite_path = "./src/models/trained/vgg11_lite_cifar10.pth"
     VggLiteModel = VGG11_Lite()
 
     if os.path.exists(vgg11_lite_path):
