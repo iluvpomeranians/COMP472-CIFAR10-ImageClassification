@@ -24,37 +24,39 @@ from src.models.cnn_vgg11 import VGG11
 
 
 # -------------------------------------------------------------------------
-# 1: VGG11_Lite — fewer convolutional layers
+# 1: VGG11_Lite — fewer convolutional layers, variable kernel size
 # -------------------------------------------------------------------------
 class VGG11_Lite(VGG11):
-    def __init__(self):
+    def __init__(self, kernel_size=3):
         super(VGG11_Lite, self).__init__()
 
-        # Replace feature extractor with a smaller stack (fewer layers)
+        padding = kernel_size // 2  # keep spatial dimensions same
+
+        # Replace feature extractor with fewer layers but variable kernel
         self.features = nn.Sequential(
-            nn.Conv2d(3, 64, 3, 1, 1),
+            nn.Conv2d(3, 64, kernel_size, 1, padding),
             nn.BatchNorm2d(64),
             nn.ReLU(inplace=True),
             nn.MaxPool2d(2, 2),
 
-            nn.Conv2d(64, 128, 3, 1, 1),
+            nn.Conv2d(64, 128, kernel_size, 1, padding),
             nn.BatchNorm2d(128),
             nn.ReLU(inplace=True),
             nn.MaxPool2d(2, 2),
 
-            nn.Conv2d(128, 256, 3, 1, 1),
+            nn.Conv2d(128, 256, kernel_size, 1, padding),
             nn.BatchNorm2d(256),
             nn.ReLU(inplace=True),
             nn.MaxPool2d(2, 2)
         )
 
-        # Recompute flatten dimension dynamically
+        # Dynamically compute flatten dimension
         with torch.no_grad():
             dummy_input = torch.zeros(1, 3, 32, 32)
             out = self.features(dummy_input)
             flatten_dim = out.numel() // out.shape[0]
 
-        # Rebuild classifier to match new flatten size
+        # Rebuild classifier (unchanged)
         self.classifier = nn.Sequential(
             nn.Linear(flatten_dim, 1024),
             nn.ReLU(inplace=True),
@@ -66,7 +68,6 @@ class VGG11_Lite(VGG11):
 class VGG11_Deep(VGG11):
     def __init__(self):
         super(VGG11_Deep, self).__init__()
-
 
         self.features = nn.Sequential(
             nn.Conv2d(3, 64, 3, 1, 1),

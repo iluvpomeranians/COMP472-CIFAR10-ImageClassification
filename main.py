@@ -133,6 +133,38 @@ def main():
     VggDeepModel, y_test_deep, y_pred_deep = VGG11.vgg_evaluate(VggDeepModel, device)
     vgg11_deep_metrics = Metrics.evaluate_model(y_test_deep, y_pred_deep, "VGG11-Deep CNN")
 
+    # --- VGG11-Lite (Kernel Size Experiments) ---
+    print("\n=== VGG11-Lite: Kernel Size Experiments ===")
+    kernel_sizes = [2, 3, 5, 7]
+    vgg_kernel_metrics = []
+
+    for k in kernel_sizes:
+        print(f"\n--- VGG11-Lite (kernel={k}×{k}) ---")
+        model_path = f"./src/models/trained/vgg11_lite_k{k}_cifar10.pth"
+        VggLiteK = VGG11_Lite(kernel_size=k)
+
+        # Check for pretrained weights
+        if os.path.exists(model_path):
+            print(f"[✓] Found pretrained model: {model_path}")
+            VggLiteK.load_state_dict(torch.load(model_path, map_location=device))
+        else:
+            print(f"[⟳] Training VGG11-Lite (kernel={k}) from scratch...")
+            VGG11.vgg_train(VggLiteK, device, epochs=10)
+            VGG11.save_model(VggLiteK, model_path)
+
+        # Evaluate
+        VggLiteK, y_test_k, y_pred_k = VGG11.vgg_evaluate(VggLiteK, device)
+        metrics_k = Metrics.evaluate_model(y_test_k, y_pred_k, f"VGG11-Lite (kernel={k}) CNN")
+        cm_k = Metrics.confusion_matrix(y_test_k, y_pred_k, num_classes=10)
+
+        # Display and export confusion matrix
+        Metrics.tabulate_confusion_matrix(cm_k, f"VGG11-Lite (kernel={k}) CNN", classifiers)
+        Metrics.export_confusion_matrix(cm_k, f"vgg11_lite_k{k}_confusion_matrix", classifiers)
+
+        vgg_kernel_metrics.append(metrics_k)
+
+
+
     #---------------------#
     # 5. Final Comparison
     #---------------------#
@@ -142,9 +174,9 @@ def main():
         scikit_metrics,
         vgg11_metrics,
         vgg11_lite_metrics,
-        vgg11_deep_metrics
+        vgg11_deep_metrics,
+        *vgg_kernel_metrics
     )
-
 
 if __name__ == "__main__":
     main()
