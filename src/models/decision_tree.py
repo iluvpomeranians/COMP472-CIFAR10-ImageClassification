@@ -31,6 +31,7 @@
 
 import numpy as np
 from sklearn.tree import DecisionTreeClassifier
+from src.utils.metrics import Metrics
 
 def load_50npz():
     data = np.load("./data/features/features_cifar10_resnet18_pca50.npz")
@@ -190,9 +191,7 @@ def predict(tree,X):
 
 def accuracy(y_true,y_pred):
     return np.mean(y_true == y_pred)
-
-
-    
+ 
 def run_pipeline():
     print("[PIPELINE] Loading data...")
     X_train, y_train, X_test,y_test = load_50npz()
@@ -226,6 +225,14 @@ def run_pipeline():
     print(f"  Custom  : {acc:.4f}")
     print(f"  Sklearn : {acc_sklearn:.4f}")
     print(f"  Δ (Sklearn - Custom) = {delta:+.4f}")
+    
+    classifiers = Metrics.extract_classes()
+    Dtree_cm = Metrics.confusion_matrix(y_test, y_pred, num_classes=10)
+    Metrics.tabulate_confusion_matrix(Dtree_cm, "Decision tree Confusion Matrix", classifiers)
+    Metrics.export_confusion_matrix(Dtree_cm, "decision_tree_confusion_matrix", classifiers)
+    Dtree_metrics = Metrics.evaluate_model(y_test, y_pred, "Decision Tree")
+    scikit_metrics = Metrics.evaluate_model(y_test, y_pred_sklearn, "Scikit-learn Decision Tree")
+    Metrics.compare_models(Dtree_metrics, scikit_metrics)
 
     return tree
 
