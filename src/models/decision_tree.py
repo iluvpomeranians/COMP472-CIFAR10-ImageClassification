@@ -118,7 +118,7 @@ def best_split(X,y,n_classes):
             best_imp = imp
             best_feat = i
             best_thresh= thr
-            print(f"[BEST_SPLIT] → Chosen feature {best_feat} with threshold {best_thresh}, impurity={best_imp:.4f}")
+            print(f"[BEST_SPLIT] -> Chosen feature {best_feat} with threshold {best_thresh}, impurity={best_imp:.4f}")
     return best_feat,best_thresh,best_imp
 
 
@@ -145,7 +145,7 @@ def build_tree(X, y,depth,max_depth,n_classes,min_samples_split=2, min_impurity_
     
     #If the impurity is too small we just make a leaf
     if curr_gini-child_imp<min_impurity_decrease:
-          print("[STOP] Gain below threshold — making leaf.")
+          print("[STOP] Gain below threshold")
           return make_leaf(y)
         
     #Splitting features left and right node
@@ -197,8 +197,8 @@ def run_pipeline():
     X_train, y_train, X_test,y_test = load_50npz()
     print(f"[PIPELINE] Train={X_train.shape}, Test={X_test.shape}")
    
-    max_depth = 100
-    min_samples_split = 10
+    max_depth = 12
+    min_samples_split = 2
     min_samples_leaf = 5
     max_features = None
     random_state = 50
@@ -224,7 +224,7 @@ def run_pipeline():
     print("\n[COMPARE] Accuracy Comparison")
     print(f"  Custom  : {acc:.4f}")
     print(f"  Sklearn : {acc_sklearn:.4f}")
-    print(f"  Δ (Sklearn - Custom) = {delta:+.4f}")
+    print(f"  delta (Sklearn - Custom) = {delta:+.4f}")
     
     classifiers = Metrics.extract_classes()
     Dtree_cm = Metrics.confusion_matrix(y_test, y_pred, num_classes=10)
