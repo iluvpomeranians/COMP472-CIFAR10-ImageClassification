@@ -9,6 +9,7 @@ from src.utils.metrics import Metrics
 from src.models.naive_bayes import GaussianNaiveBayes
 from src.models.cnn_vgg11 import VGG11
 from src.models.cnn_vgg_variants import VGG11_Lite, VGG11_Deep
+from src.models.decision_tree import decision_tree
 
 
 def check_cuda():
@@ -62,11 +63,7 @@ def main():
     #---------------------#
     print("\n=== Decision Tree Classifier ===")
     # TODO: Implement Decision Tree Classifier using Scikit-learn
-    # - Use features from load_50npz()
-    # - Train DecisionTreeClassifier()
-    # - Evaluate accuracy, precision, recall, F1, confusion matrix
-    # - Save metrics and append to comparison table
-
+    DtreeModel = decision_tree()
     #---------------------#
     # 3. MLP Classifier
     #---------------------#

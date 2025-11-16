@@ -192,12 +192,12 @@ def predict(tree,X):
 def accuracy(y_true,y_pred):
     return np.mean(y_true == y_pred)
  
-def run_pipeline():
+def decision_tree():
     print("[PIPELINE] Loading data...")
     X_train, y_train, X_test,y_test = load_50npz()
     print(f"[PIPELINE] Train={X_train.shape}, Test={X_test.shape}")
    
-    max_depth = 12
+    max_depth = 4096
     min_samples_split = 2
     min_samples_leaf = 5
     max_features = None
