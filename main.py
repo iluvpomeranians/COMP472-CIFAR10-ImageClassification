@@ -61,13 +61,13 @@ def main():
     #---------------------#
     # 2. Decision Tree
     #---------------------#
-    
+
     max_depth = 50
     min_samples_split = 2
     min_samples_leaf = 5
     max_features = None
     random_state = 50
-        
+
     print("\n=== Decision Tree Classifier ===")
     # TODO: Implement Decision Tree Classifier using Scikit-learn
     DtreeModel = DTree()
@@ -192,7 +192,7 @@ def main():
     print("\n=== Final Model Comparison ===")
     Metrics.compare_models(
         gauss_metrics,
-        scikit_metrics,
+        Dtree_metrics,
         vgg11_metrics,
         vgg11_lite_metrics,
         vgg11_deep_metrics,
