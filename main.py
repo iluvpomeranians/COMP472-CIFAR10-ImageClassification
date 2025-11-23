@@ -9,7 +9,7 @@ from src.utils.metrics import Metrics
 from src.models.naive_bayes import GaussianNaiveBayes
 from src.models.cnn_vgg11 import VGG11
 from src.models.cnn_vgg_variants import VGG11_Lite, VGG11_Deep
-from src.models.decision_tree import decision_tree
+from src.models.decision_tree import DTree
 
 
 def check_cuda():
@@ -61,9 +61,33 @@ def main():
     #---------------------#
     # 2. Decision Tree
     #---------------------#
+    
+    max_depth = 50
+    min_samples_split = 2
+    min_samples_leaf = 5
+    max_features = None
+    random_state = 50
+        
     print("\n=== Decision Tree Classifier ===")
     # TODO: Implement Decision Tree Classifier using Scikit-learn
-    DtreeModel = decision_tree()
+    DtreeModel = DTree()
+    x_train, Y_train, x_test,Y_test =DtreeModel.load_50npz()
+    tree,n_classes= DtreeModel.train_decision_tree_gini( x_train, Y_train,max_depth=max_depth,min_samples_split=min_samples_split,min_impurity_decrease=0.0)
+    y_pred = DtreeModel.predict(tree,X_test)
+    acc=DtreeModel.accuracy(y_test, y_pred)
+    print(f"\n Accuracy(decision tree with Gini, max_depth={max_depth}): ",acc)
+    print("\n[PIPELINE] Training scikit-learn DecisionTreeClassifier...")
+    sk_clf = DtreeModel.train_sklearn_decision_tree(x_train, Y_train,max_depth=max_depth, min_samples_split=min_samples_split, min_samples_leaf=min_samples_leaf,max_features=max_features,criterion='gini',random_state=random_state)
+    y_pred_sklearn = sk_clf.predict(x_test)
+    acc_sklearn = DtreeModel.accuracy(Y_test, y_pred_sklearn)
+    print(f"[PIPELINE] Scikit-learn tree Accuracy: {acc_sklearn:.4f}")
+    classifiers = Metrics.extract_classes()
+    Dtree_cm = Metrics.confusion_matrix(y_test, y_pred, n_classes)
+    Metrics.tabulate_confusion_matrix(Dtree_cm, "Decision tree Confusion Matrix", classifiers)
+    Metrics.export_confusion_matrix(Dtree_cm, "decision_tree_confusion_matrix", classifiers)
+    Dtree_metrics = Metrics.evaluate_model(y_test, y_pred, "Decision Tree")
+    scikit_metrics = Metrics.evaluate_model(y_test, y_pred_sklearn, "Scikit-learn Decision Tree")
+    Metrics.compare_models(Dtree_metrics, scikit_metrics)
     #---------------------#
     # 3. MLP Classifier
     #---------------------#
