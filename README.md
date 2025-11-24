@@ -1,110 +1,145 @@
-# COMP472 Fall 2025 – CIFAR-10 Classification (Naive Bayes to CNN)
-
+# COMP472 Fall 2025 – CIFAR-10 Image Classification
 ### Concordia University — Artificial Intelligence Project
 
-This repository contains our team’s implementation for the **COMP472** project, focusing on **image classification using the CIFAR-10 dataset**.
-We begin with **Naive Bayes (Step 3)** and will later expand to **Decision Trees**, **MLP**, and **CNNs**.
+# Contributions
+David Martinez – System design, Naive Bayes modules, VGG modules
+Thomas Kamil Brochet – Decision Tree modules
+Zhan Jun Cheung – MLP modules
+All members jointly reviewed results and prepared final documentation.
+
+Student IDs:
+David Martinez – 29556869
+Thomas Kamil Brochet – 40121143
+Zhan Jun Cheung – 40212301
 
 ---
 
-## Setup & Installation
+This repository contains our team’s implementation for the COMP472 Machine Learning Project, focused on CIFAR-10 image classification using a progression of models:
 
-### Prerequisites
-- **Python 3.11.2**
-- **pip** 
+- Gaussian Naive Bayes
+- Decision Tree
+- MLP (optional)
+- CNNs (VGG11, VGG11-Lite, VGG11-Deep)
 
-### Installation Steps
-
-1. Upgrade pip and install dependencies:
-   ```bash
-   pip3 install torch torchvision
-   python -m pip install --upgrade pip
-   python -m venv .venv
-   Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-   .venv\Scripts\activate
-   pip install -r requirements.txt
-   ```
-
-2. Verify setup by running the data loader:
-   ```bash
-   python main.py
-   ```
-
-   This will automatically download the CIFAR-10 dataset into the `./data/` directory.
-   If successful, you’ll see:
-   ```
-   Train subset size: 5000
-   Test subset size: 1000
-   ```
+We perform feature extraction using ResNet-18, dimensionality reduction using PCA, and evaluation using standardized metrics.
 
 ---
 
-## 📁 Repository Structure
+# Quick Start (TA-Friendly)
+
+The fastest and recommended way to run our entire project is through Google Colab:
+
+Colab Notebook:
+https://colab.research.google.com/drive/1Pm4H2EBUWQVK2KxcXSQV1DRKIROY9sWq?usp=sharing
+
+No installation required.
+Runs on GPU.
+No dependency issues.
+
+The Colab notebook:
+- Automatically clones the repo
+- Installs lightweight dependencies
+- Uses Colab’s built-in PyTorch
+- Runs main.py end-to-end in one click
+
+---
+
+# Local Installation (Optional)
+
+If you prefer running the project locally:
+
+## Prerequisites
+- Python 3.10
+- pip
+
+## Setup
+```
+python3 -m venv .venv
+source .venv/bin/activate   # Windows: .venv\Scripts\activate
+pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+## Run the full pipeline
+```
+python main.py
+```
+
+This will:
+1. Load CIFAR-10
+2. Extract ResNet-18 features (512-D)
+3. Apply PCA (50-D)
+4. Train and evaluate all models
+5. Output metrics and confusion matrices
+
+---
+
+# Repository Structure
 
 ```
-COMP472_PROJECT/
+COMP472-CIFAR10-ImageClassification/
 │
-├── data/                                 # Dataset storage (CIFAR-10 + generated features)
+├── data/                                 # Auto-created dataset/features folder
 │
 ├── src/
-│   ├── data_pipeline/                    # Data preparation & preprocessing
-│   │   ├── data_loader.py                # Loads & subsets CIFAR-10 (500 train + 100 test per class)
-│   │   ├── feature_extractor.py          # Extracts 512-D ResNet-18 features
-│   │   ├── pca_reduction.py              # Reduces feature vectors to 50-D using PCA
-│   │   ├── run_data_pipeline.py          # Orchestrates the full preprocessing pipeline
+│   ├── data_pipeline/
+│   │   ├── data_loader.py
+│   │   ├── feature_extractor.py
+│   │   ├── pca_reduction.py
+│   │   ├── run_data_pipeline.py
 │   │   └── __init__.py
 │   │
-│   ├── models/                           # Machine learning models
-│   │   ├── naive_bayes.py                # Gaussian Naive Bayes (Step 3)
-│   │   ├── decision_tree.py              # Decision Tree (Step 4)
-│   │   ├── mlp.py                        # Multi-Layer Perceptron (Step 5)
-│   │   ├── cnn_vgg11.py                  # CNN (Step 6)
+│   ├── models/
+│   │   ├── naive_bayes.py
+│   │   ├── decision_tree.py
+│   │   ├── cnn_vgg11.py
+│   │   ├── cnn_vgg_variants.py
 │   │   └── __init__.py
 │   │
-│   ├── utils/                            # Shared utilities and metrics
-│   │   ├── metrics.py                    # Accuracy, confusion matrix, plotting tools
+│   ├── utils/
+│   │   ├── metrics.py
 │   │   └── __init__.py
 │   │
 │   └── __init__.py
 │
-├── main.py                               # Project entry point (runs full pipeline)
-├── requirements.txt                      # Python dependencies
-├── README.md                             # Project documentation
-└── .gitignore                            # Ignored folders (data/, __pycache__/, etc.)
-
+├── main.py
+├── requirements.txt
+├── README.md
+└── .gitignore
 ```
 
-### 🧩 Future Files to Be Added
-- `decision_tree.py` → Step 4 (Gini-based classifier)
-- `mlp.py` → Step 5 (3-layer PyTorch MLP)
-- `cnn_vgg11.py` → Step 6 (CNN training directly on images)
-- `models/` → Folder to store trained `.pth` or `.pkl` models
+---
+
+# Pipeline Overview
+
+Running `main.py` performs all steps automatically:
+
+1. Dataset loading
+2. ResNet-18 feature extraction
+3. PCA to 50 dimensions
+4. Train models: Naive Bayes, Decision Tree, CNN (VGG11 + Lite + Deep)
+5. Evaluation: confusion matrices, accuracy, precision, recall, F1
+6. Optional: save trained models
 
 ---
 
-## ⚙️ Running the Full Pipeline
+# Team Workflow
 
-Once all modules are implemented, the main entry point will be:
-
-```bash
-python main.py
-```
-
-This will execute the entire flow:
-
-1. **Load CIFAR-10 subset** (`data_loader.py`)
-2. **Extract 512-D features using ResNet-18** (`feature_extract.py`)
-3. **Reduce to 50-D using PCA**
-4. **Train and evaluate Naive Bayes models** (`naive_bayes.py`)
-5. **Print metrics and confusion matrices** (`utils.py`)
+- Do not commit `data/` or `__pycache__/`
+- All teammates run preprocessing locally or via Colab
+- Each model is modular and testable independently
+- The Colab notebook serves as the canonical test environment
 
 ---
 
-## 👥 Team Workflow
+# Notes for the Marker / TA
 
-1. Install requirements (only needed once).
-2. Run `python main.py` to regenerate data and models locally — datasets are not versioned.
-3. Never commit `/data/` or `/__pycache__/`.
-4. Each teammate should pull, run locally, and confirm their setup before pushing changes.
+The Colab notebook is the recommended and official way to run the project.
+
+If testing locally, please use Python 3.10 for compatibility.
 
 ---
+
+# Contact
+
+For any issues running the code, please contact the project team.
