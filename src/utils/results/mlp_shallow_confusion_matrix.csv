@@ -1,0 +1,31 @@
+,"Pred 0
+(airplane)","Pred 1
+(automobile)","Pred 2
+(bird)","Pred 3
+(cat)","Pred 4
+(deer)","Pred 5
+(dog)","Pred 6
+(frog)","Pred 7
+(horse)","Pred 8
+(ship)","Pred 9
+(truck)"
+"Act 0
+(airplane)",87,0,3,1,0,0,1,0,5,3
+"Act 1
+(automobile)",3,92,0,1,0,0,0,0,0,4
+"Act 2
+(bird)",3,1,79,6,2,5,4,0,0,0
+"Act 3
+(cat)",1,0,3,70,2,15,8,1,0,0
+"Act 4
+(deer)",3,0,1,4,83,2,1,6,0,0
+"Act 5
+(dog)",0,0,4,12,1,77,2,3,1,0
+"Act 6
+(frog)",1,0,3,1,2,2,89,1,1,0
+"Act 7
+(horse)",0,0,0,3,8,4,0,85,0,0
+"Act 8
+(ship)",6,0,1,1,0,0,0,0,92,0
+"Act 9
+(truck)",3,2,0,1,0,0,0,0,0,94

@@ -107,6 +107,7 @@ def main():
         model = create_mlp(key)
         save_path = f"./src/models/trained/{name}.pth"
 
+        # Load or train
         if os.path.exists(save_path):
             print(f"[✓] Found pretrained {name}")
             model.load_state_dict(torch.load(save_path, map_location=device))
@@ -114,10 +115,17 @@ def main():
             model.mlp_training(device=device, epoch_num=20)
             model.save_model(save_path)
 
+        # Evaluate
         y_test_mlp, y_pred_mlp = model.mlp_evaluate(device=device)
+
+        # Metrics
         metrics = Metrics.evaluate_model(y_test_mlp, y_pred_mlp, name)
         mlp_metrics_list.append(metrics)
 
+        # Confusion Matrix
+        cm_mlp = Metrics.confusion_matrix(y_test_mlp, y_pred_mlp, num_classes=10)
+        Metrics.tabulate_confusion_matrix(cm_mlp, f"{name} Confusion Matrix", classifiers)
+        Metrics.export_confusion_matrix(cm_mlp, f"{name.lower()}_confusion_matrix", classifiers)
 
 
     #---------------------#
