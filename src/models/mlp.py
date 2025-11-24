@@ -1,185 +1,156 @@
-#TODO: MLP algorithm
-#inputs-> transfer function: sum(weights*x1+b)->activation function: 1/(1+e^-x)*1-(1/(1+e^-x))
-#backpropagate training
-
-# iterations until error rate is minimized - all data must be evaluated at least for an epoch
-
-#linear(50,512)-ReLu
-#linear(512,512)-batchNorm(512)-ReLU
-#linear(512,10)
-
-# input layer-> 2 hidden layers-> output layer
-
-#cross entropy loss with torch.nn.CrossEntropyLoss momentum=0.9
-
-
-# Sources
-# https://elcaiseri.medium.com/building-a-multi-layer-perceptron-from-scratch-with-numpy-e4cee82ab06d
-# https://machinelearningmastery.com/building-multilayer-perceptron-models-in-pytorch/
-# https://www.kaggle.com/code/pinocookie/pytorch-simple-mlp
-# https://www.youtube.com/watch?v=tJ3-KYMMOOs
-
-#-----------------------------------------------------------------------
+# -----------------------------------------------------------------------
+# Multi-Layer Perceptron (MLP) with Variants:
+#   - MLP_Base   (512 → 512)
+#   - MLP_Shallow (512 only)
+#   - MLP_Deep   (512 → 512 → 512)
+# -----------------------------------------------------------------------
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import TensorDataset, DataLoader
-from sklearn.metrics import confusion_matrix, precision_score, recall_score
 from tqdm import tqdm
-import matplotlib.pyplot as plot
-import time
 import os
 
-def load_model(path, device="cpu"):
-    model = mlp()
-    state_dict = torch.load(path, map_location=device)
-    model.load_state_dict(state_dict)
-    return model
+
+# ================================================================
+# FACTORY: Create different MLP variants
+# ================================================================
+def create_mlp(model_type="base"):
+    if model_type.lower() == "shallow":
+        return MLP_Shallow()
+    elif model_type.lower() == "deep":
+        return MLP_Deep()
+    else:
+        return MLP_Base()
 
 
-class mlp(nn.Module):
-
+# ================================================================
+# BASE CLASS (shared training, testing, evaluation)
+# ================================================================
+class MLP_BaseClass(nn.Module):
 
     @staticmethod
     def load_50npz():
         data = np.load("./data/features/features_cifar10_resnet18_pca50.npz")
         X_train, y_train = data["X_train"], data["y_train"]
         X_test,  y_test  = data["X_test"],  data["y_test"]
-        print (f"Loaded PCA-reduced features: X_train={X_train.shape}, X_test={X_test.shape}")
-        print (f"Label ranges: train[{y_train.min()}..{y_train.max()}], test[{y_test.min()}..{y_test.max()}]")
+        print(f"Loaded PCA-reduced features: X_train={X_train.shape}, X_test={X_test.shape}")
         return X_train, y_train, X_test, y_test
 
-
-    def __init__(self):
-
-        super(mlp,self).__init__()
-        self.momentum=0.9
-        self.num_classes=10
-
-        self.features=nn.Sequential(
-
-            nn.Linear(50,512),nn.ReLU(),
-
-
-            nn.Linear(512,512),nn.BatchNorm1d(512),nn.ReLU(),
-
-
-            nn.Linear(512,10),
-        )
-
-    def forward(self,x):
-        x=x.reshape(x.shape[0],-1)
+    def forward(self, x):
+        x = x.reshape(x.shape[0], -1)
         return self.features(x)
 
-
-    def mlp_training(self, device="cuda", epoch_num=20):          #https://medium.com/@mn05052002/building-a-simple-mlp-from-scratch-using-pytorch-7d50ca66512b
-        print(f"MLP Training with {device} in progress. ")
+    # ------------------------- TRAIN -------------------------
+    def mlp_training(self, device="cuda", epoch_num=20):
+        print(f"[C] Training {self.model_name} with {device}...")
 
         self.to(device)
 
-        X_train,y_train, X_test, y_test = self.load_50npz()
-        X_train=torch.tensor(X_train, dtype=torch.float32)
-        y_train=torch.tensor(y_train, dtype=torch.long)
-        X_test=torch.tensor(X_test, dtype=torch.float32)
-        y_test=torch.tensor(y_test, dtype=torch.long)
+        X_train, y_train, X_test, y_test = self.load_50npz()
+        X_train = torch.tensor(X_train, dtype=torch.float32)
+        y_train = torch.tensor(y_train, dtype=torch.long)
 
-        train_load=DataLoader(TensorDataset(X_train, y_train), batch_size=128, shuffle=True)
-        test_load=DataLoader(TensorDataset(X_test, y_test), batch_size=128, shuffle=False)
+        train_load = DataLoader(TensorDataset(X_train, y_train),
+                                batch_size=128, shuffle=True)
 
-        criterion= nn.CrossEntropyLoss()
+        criterion = nn.CrossEntropyLoss()
         optimizer = optim.SGD(self.parameters(), lr=0.01, momentum=0.9)
 
-
-        print(f"{epoch_num} epochs will be run ")
-
-        loss_log=[]
-
         for epoch in range(epoch_num):
-
             self.train()
-            running_loss=0
+            running_loss = 0
 
-
-            for batch_idx, (imgs, lbls) in enumerate(tqdm(train_load,desc="Training", leave=False)):
-                imgs,lbls=imgs.to(device),lbls.to(device)
-                outputs=self(imgs)
-                loss=criterion(outputs,lbls)
+            for batch_idx, (imgs, lbls) in enumerate(
+                    tqdm(train_load, desc=f"Training-{self.model_name}", leave=False)):
+                imgs, lbls = imgs.to(device), lbls.to(device)
 
                 optimizer.zero_grad()
+                loss = criterion(self(imgs), lbls)
                 loss.backward()
                 optimizer.step()
-                running_loss+=loss.item()
 
+                running_loss += loss.item()
 
-                loss_log.append(loss.item())
-
-                average_loss=running_loss/len(train_load)
-                if batch_idx == len(train_load)-1:
-                    print(f"Epoch [{epoch+1}/{epoch_num}] - Avg Loss: {running_loss/len(train_load):.4f}")
-
-
-        return loss_log, test_load
-
-
-    def mlp_testing(self, test_load, device="cuda"):
-        self.to(device)
-        self.eval()
-
-        with torch.no_grad():
-            good_predictions = 0
-            total_predictions = 0
-
-            for imgs, lbls in tqdm(test_load, desc="Testing", leave=False):
-                imgs = imgs.to(device)
-                lbls = lbls.to(device)
-
-                outputs = self(imgs)
-                _, predicted = torch.max(outputs, 1)
-
-                good_predictions += (predicted == lbls).sum().item()
-                total_predictions += lbls.size(0)
-
-        accuracy = 100 * good_predictions / total_predictions
-        print(f"The accuracy of the tests are {accuracy:.4f}")
-        return accuracy
-
-
-    def save_model(self, path="./src/models/trained/mlp_cifar10.pth"):
-        os.makedirs(os.path.dirname(path), exist_ok=True)
-        torch.save(self.state_dict(), path)
-        print(f"Model saved to {path}")
-
+            tqdm.write(f"{self.model_name} Epoch [{epoch+1}/{epoch_num}] "
+                       f"Avg Loss: {running_loss / len(train_load):.4f}")
 
     def mlp_evaluate(self, device="cuda"):
         self.to(device)
         self.eval()
 
-        # Load test data
         _, _, X_test, y_test = self.load_50npz()
         X_test = torch.tensor(X_test, dtype=torch.float32).to(device)
         y_test = torch.tensor(y_test, dtype=torch.long)
 
-        test_load = DataLoader(TensorDataset(X_test, y_test), batch_size=128, shuffle=False)
+        test_load = DataLoader(TensorDataset(X_test, y_test), batch_size=128)
 
-        all_preds = []
-        all_labels = []
+        preds, labels = [], []
 
         with torch.no_grad():
             for imgs, lbls in test_load:
                 imgs = imgs.to(device)
-                outputs = self(imgs)
-                _, predicted = torch.max(outputs, 1)
-                all_preds.extend(predicted.cpu().numpy())
-                all_labels.extend(lbls.numpy())
+                out = self(imgs)
+                _, pred = torch.max(out, 1)
+                preds.extend(pred.cpu().numpy())
+                labels.extend(lbls.numpy())
 
-        return y_test.numpy(), np.array(all_preds)
+        return np.array(labels), np.array(preds)
 
 
-if __name__=="__main__":
-    GPU_indx = 0
-    device = torch.device(f"cuda:{GPU_indx}") if torch.cuda.is_available() else torch.device("cpu")
-    model = mlp()
-    loss_log, test_load = model.mlp_training(device=device, epoch_num=20)
-    model.mlp_testing(test_load, device=device)
-    model.save_model("./src/models/trained/mlp_cifar10.pth")
+    def save_model(self, path):
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        torch.save(self.state_dict(), path)
+        print(f"Saved {self.model_name} → {path}")
+
+
+# ================================================================
+# 1) BASE MODEL (512 → 512)
+# ================================================================
+class MLP_Base(MLP_BaseClass):
+    def __init__(self):
+        super().__init__()
+        self.model_name = "MLP_Base"
+        self.features = nn.Sequential(
+            nn.Linear(50, 512), nn.ReLU(),
+            nn.Linear(512, 512), nn.BatchNorm1d(512), nn.ReLU(),
+            nn.Linear(512, 10)
+        )
+
+
+# ================================================================
+# 2) SHALLOW MODEL (512 only)
+# ================================================================
+class MLP_Shallow(MLP_BaseClass):
+    def __init__(self):
+        super().__init__()
+        self.model_name = "MLP_Shallow"
+        self.features = nn.Sequential(
+            nn.Linear(50, 512), nn.ReLU(),
+            nn.Linear(512, 10)
+        )
+
+
+# ================================================================
+# 3) DEEP MODEL (512 → 512 → 512)
+# ================================================================
+class MLP_Deep(MLP_BaseClass):
+    def __init__(self):
+        super().__init__()
+        self.model_name = "MLP_Deep"
+        self.features = nn.Sequential(
+            nn.Linear(50, 512), nn.ReLU(),
+            nn.Linear(512, 512), nn.BatchNorm1d(512), nn.ReLU(),
+            nn.Linear(512, 512), nn.BatchNorm1d(512), nn.ReLU(),
+            nn.Linear(512, 10)
+        )
+
+
+if __name__ == "__main__":
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+
+    model = create_mlp("base")
+    model.mlp_training(device=device, epoch_num=20)
+    y_test, y_pred = model.mlp_evaluate(device=device)
+    model.save_model("./src/models/trained/mlp_base.pth")

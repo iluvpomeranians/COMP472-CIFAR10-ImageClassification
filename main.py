@@ -10,7 +10,7 @@ from src.models.naive_bayes import GaussianNaiveBayes
 from src.models.cnn_vgg11 import VGG11
 from src.models.cnn_vgg_variants import VGG11_Lite, VGG11_Deep
 from src.models.decision_tree import DTree
-from src.models.mlp import mlp
+from src.models.mlp import create_mlp
 
 
 def check_cuda():
@@ -92,25 +92,32 @@ def main():
     #---------------------#
     # 3. MLP Classifier
     #---------------------#
-    print("\n=== Multi-Layer Perceptron (MLP) ===")
-    mlp_path = "./src/models/trained/mlp_cifar10.pth"
-    MLPModel = mlp()
+    print("\n=== MLP Variants ===")
 
-    if os.path.exists(mlp_path):
-        print(f"[✓] Found pretrained MLP: {mlp_path}")
-        state_dict = torch.load(mlp_path, map_location=device)
-        MLPModel.load_state_dict(state_dict)
-    else:
-        print("[⟳] Training MLP from scratch...")
-        MLPModel.mlp_training(device=device, epoch_num=20)
-        MLPModel.save_model(mlp_path)
+    mlp_variants = {
+        "MLP_Base": "base",
+        "MLP_Shallow": "shallow",
+        "MLP_Deep": "deep"
+    }
 
-    # Evaluate
-    y_test_mlp, y_pred_mlp = MLPModel.mlp_evaluate(device=device)
-    mlp_metrics = Metrics.evaluate_model(y_test_mlp, y_pred_mlp, "MLP Classifier")
-    mlp_cm = Metrics.confusion_matrix(y_test_mlp, y_pred_mlp, num_classes=10)
-    Metrics.tabulate_confusion_matrix(mlp_cm, "MLP Confusion Matrix", classifiers)
-    Metrics.export_confusion_matrix(mlp_cm, "mlp_confusion_matrix", classifiers)
+    mlp_metrics_list = []
+
+    for name, key in mlp_variants.items():
+        print(f"\n--- Training {name} ---")
+        model = create_mlp(key)
+        save_path = f"./src/models/trained/{name}.pth"
+
+        if os.path.exists(save_path):
+            print(f"[✓] Found pretrained {name}")
+            model.load_state_dict(torch.load(save_path, map_location=device))
+        else:
+            model.mlp_training(device=device, epoch_num=20)
+            model.save_model(save_path)
+
+        y_test_mlp, y_pred_mlp = model.mlp_evaluate(device=device)
+        metrics = Metrics.evaluate_model(y_test_mlp, y_pred_mlp, name)
+        mlp_metrics_list.append(metrics)
+
 
 
     #---------------------#
@@ -208,7 +215,7 @@ def main():
     Metrics.compare_models(
         gauss_metrics,
         Dtree_metrics,
-        mlp_metrics,
+        *mlp_metrics_list,
         vgg11_metrics,
         vgg11_lite_metrics,
         vgg11_deep_metrics,
