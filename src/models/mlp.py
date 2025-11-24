@@ -31,6 +31,11 @@ import matplotlib.pyplot as plot
 import time
 import os
 
+def load_model(path, device="cpu"):
+    model = mlp()
+    state_dict = torch.load(path, map_location=device)
+    model.load_state_dict(state_dict)
+    return model
 
 
 class mlp(nn.Module):
@@ -83,7 +88,7 @@ class mlp(nn.Module):
         test_load=DataLoader(TensorDataset(X_test, y_test), batch_size=128, shuffle=False)
 
         criterion= nn.CrossEntropyLoss()
-        optimizer=optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
+        optimizer = optim.SGD(self.parameters(), lr=0.01, momentum=0.9)
 
 
         print(f"{epoch_num} epochs will be run ")
@@ -110,7 +115,9 @@ class mlp(nn.Module):
                 loss_log.append(loss.item())
 
                 average_loss=running_loss/len(train_load)
-                print(f"Epoch number {epoch+1}/{epoch_num} // Loss {running_loss: .4f} ")
+                if batch_idx == len(train_load)-1:
+                    print(f"Epoch [{epoch+1}/{epoch_num}] - Avg Loss: {running_loss/len(train_load):.4f}")
+
 
         return loss_log, test_load
 
@@ -138,18 +145,41 @@ class mlp(nn.Module):
         return accuracy
 
 
-    def save_model(self, path="./models/trained/mlp_cifar10.pth"):
+    def save_model(self, path="./src/models/trained/mlp_cifar10.pth"):
         os.makedirs(os.path.dirname(path), exist_ok=True)
-        torch.save(model.state_dict(), path)
+        torch.save(self.state_dict(), path)
         print(f"Model saved to {path}")
 
-    def mlp_test():
-        pass
+
+    def mlp_evaluate(self, device="cuda"):
+        self.to(device)
+        self.eval()
+
+        # Load test data
+        _, _, X_test, y_test = self.load_50npz()
+        X_test = torch.tensor(X_test, dtype=torch.float32).to(device)
+        y_test = torch.tensor(y_test, dtype=torch.long)
+
+        test_load = DataLoader(TensorDataset(X_test, y_test), batch_size=128, shuffle=False)
+
+        all_preds = []
+        all_labels = []
+
+        with torch.no_grad():
+            for imgs, lbls in test_load:
+                imgs = imgs.to(device)
+                outputs = self(imgs)
+                _, predicted = torch.max(outputs, 1)
+                all_preds.extend(predicted.cpu().numpy())
+                all_labels.extend(lbls.numpy())
+
+        return y_test.numpy(), np.array(all_preds)
+
 
 if __name__=="__main__":
-    GPU_indx=0
-    device=torch.device(GPU_indx if torch.cuda.is_available() else 'cpu')
-    model=mlp()
-    loss_log,test_load= model.mlp_training(device=device, epoch_num=20)
-    model.mlp_testing(test_load,device=device)
-    model.save_model()
+    GPU_indx = 0
+    device = torch.device(f"cuda:{GPU_indx}") if torch.cuda.is_available() else torch.device("cpu")
+    model = mlp()
+    loss_log, test_load = model.mlp_training(device=device, epoch_num=20)
+    model.mlp_testing(test_load, device=device)
+    model.save_model("./src/models/trained/mlp_cifar10.pth")

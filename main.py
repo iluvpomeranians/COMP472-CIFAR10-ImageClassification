@@ -10,6 +10,7 @@ from src.models.naive_bayes import GaussianNaiveBayes
 from src.models.cnn_vgg11 import VGG11
 from src.models.cnn_vgg_variants import VGG11_Lite, VGG11_Deep
 from src.models.decision_tree import DTree
+from src.models.mlp import mlp
 
 
 def check_cuda():
@@ -69,7 +70,6 @@ def main():
     random_state = 50
 
     print("\n=== Decision Tree Classifier ===")
-    # TODO: Implement Decision Tree Classifier using Scikit-learn
     DtreeModel = DTree()
     x_train, Y_train, x_test,Y_test =DtreeModel.load_50npz()
     tree,n_classes= DtreeModel.train_decision_tree_gini( x_train, Y_train,max_depth=max_depth,min_samples_split=min_samples_split,min_impurity_decrease=0.0)
@@ -88,15 +88,30 @@ def main():
     Dtree_metrics = Metrics.evaluate_model(y_test, y_pred, "Decision Tree")
     scikit_metrics = Metrics.evaluate_model(y_test, y_pred_sklearn, "Scikit-learn Decision Tree")
     Metrics.compare_models(Dtree_metrics, scikit_metrics)
+
     #---------------------#
     # 3. MLP Classifier
     #---------------------#
     print("\n=== Multi-Layer Perceptron (MLP) ===")
-    # TODO: Implement MLP (using either PyTorch or Scikit-learn MLPClassifier)
-    # - Input size matches ResNet features (512)
-    # - Hidden layers: e.g. 256 → 128 → 10
-    # - Use ReLU activations, CrossEntropyLoss, SGD/Adam
-    # - Save model, evaluate, and append metrics
+    mlp_path = "./src/models/trained/mlp_cifar10.pth"
+    MLPModel = mlp()
+
+    if os.path.exists(mlp_path):
+        print(f"[✓] Found pretrained MLP: {mlp_path}")
+        state_dict = torch.load(mlp_path, map_location=device)
+        MLPModel.load_state_dict(state_dict)
+    else:
+        print("[⟳] Training MLP from scratch...")
+        MLPModel.mlp_training(device=device, epoch_num=20)
+        MLPModel.save_model(mlp_path)
+
+    # Evaluate
+    y_test_mlp, y_pred_mlp = MLPModel.mlp_evaluate(device=device)
+    mlp_metrics = Metrics.evaluate_model(y_test_mlp, y_pred_mlp, "MLP Classifier")
+    mlp_cm = Metrics.confusion_matrix(y_test_mlp, y_pred_mlp, num_classes=10)
+    Metrics.tabulate_confusion_matrix(mlp_cm, "MLP Confusion Matrix", classifiers)
+    Metrics.export_confusion_matrix(mlp_cm, "mlp_confusion_matrix", classifiers)
+
 
     #---------------------#
     # 4. CNN Models (VGG11 + Variants)
@@ -193,6 +208,7 @@ def main():
     Metrics.compare_models(
         gauss_metrics,
         Dtree_metrics,
+        mlp_metrics,
         vgg11_metrics,
         vgg11_lite_metrics,
         vgg11_deep_metrics,
