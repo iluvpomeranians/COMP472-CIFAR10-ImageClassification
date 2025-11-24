@@ -1,5 +1,5 @@
 #TODO: MLP algorithm
-#inputs-> transfer function: sum(weights*x1+b)->activation function: 1/(1+e^-x)*1-(1/(1+e^-x)) 
+#inputs-> transfer function: sum(weights*x1+b)->activation function: 1/(1+e^-x)*1-(1/(1+e^-x))
 #backpropagate training
 
 # iterations until error rate is minimized - all data must be evaluated at least for an epoch
@@ -8,7 +8,7 @@
 #linear(512,512)-batchNorm(512)-ReLU
 #linear(512,10)
 
-# input layer-> 2 hidden layers-> output layer 
+# input layer-> 2 hidden layers-> output layer
 
 #cross entropy loss with torch.nn.CrossEntropyLoss momentum=0.9
 
@@ -66,13 +66,13 @@ class mlp(nn.Module):
     def forward(self,x):
         x=x.reshape(x.shape[0],-1)
         return self.features(x)
-        
+
 
     def mlp_training(self, device="cuda", epoch_num=20):          #https://medium.com/@mn05052002/building-a-simple-mlp-from-scratch-using-pytorch-7d50ca66512b
         print(f"MLP Training with {device} in progress. ")
 
         self.to(device)
-        
+
         X_train,y_train, X_test, y_test = self.load_50npz()
         X_train=torch.tensor(X_train, dtype=torch.float32)
         y_train=torch.tensor(y_train, dtype=torch.long)
@@ -84,7 +84,7 @@ class mlp(nn.Module):
 
         criterion= nn.CrossEntropyLoss()
         optimizer=optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
-    
+
 
         print(f"{epoch_num} epochs will be run ")
 
@@ -94,11 +94,11 @@ class mlp(nn.Module):
 
             self.train()
             running_loss=0
-    
+
 
             for batch_idx, (imgs, lbls) in enumerate(tqdm(train_load,desc="Training", leave=False)):
                 imgs,lbls=imgs.to(device),lbls.to(device)
-                outputs=model(imgs)
+                outputs=self(imgs)
                 loss=criterion(outputs,lbls)
 
                 optimizer.zero_grad()
@@ -106,7 +106,7 @@ class mlp(nn.Module):
                 optimizer.step()
                 running_loss+=loss.item()
 
-                
+
                 loss_log.append(loss.item())
 
                 average_loss=running_loss/len(train_load)
@@ -115,22 +115,28 @@ class mlp(nn.Module):
         return loss_log, test_load
 
 
-    def mlp_testing(self,test_load,device="cuda"):
-            model.to(device)
-            model.eval()
+    def mlp_testing(self, test_load, device="cuda"):
+        self.to(device)
+        self.eval()
 
-            with torch.no_grad():
-                good_predictions=0
-                total_predictions=0
-                for imgs,lbls in enumerate(tqdm(test_load,desc="Testing",leave=False)):
-                    outputs=self(imgs)
-                    _,predicted=torch.max(outputs,1)
-                    good_predictions+=(predicted==lbls).sum().item()
-                    total_predictions+=lbls.shape[0]
-            accuracy=100*good_predictions/total_predictions
+        with torch.no_grad():
+            good_predictions = 0
+            total_predictions = 0
 
-            print(f"The accuracy of the tests are {accuracy:.4f}")
-            return accuracy
+            for imgs, lbls in tqdm(test_load, desc="Testing", leave=False):
+                imgs = imgs.to(device)
+                lbls = lbls.to(device)
+
+                outputs = self(imgs)
+                _, predicted = torch.max(outputs, 1)
+
+                good_predictions += (predicted == lbls).sum().item()
+                total_predictions += lbls.size(0)
+
+        accuracy = 100 * good_predictions / total_predictions
+        print(f"The accuracy of the tests are {accuracy:.4f}")
+        return accuracy
+
 
     def save_model(self, path="./models/trained/mlp_cifar10.pth"):
         os.makedirs(os.path.dirname(path), exist_ok=True)
